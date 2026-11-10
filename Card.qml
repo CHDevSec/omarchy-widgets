@@ -88,10 +88,27 @@ BorderSurface {
       if (mouse.button === Qt.RightButton && card.movable)
         card.service.openSettings(card.screenName, card.x + mouse.x, card.y + mouse.y, card.widgetId)
     }
+    // The desk (WidgetsWindow) draws the grid and guides while a card moves
+    // and says where it should land.
+    onPositionChanged: if (drag.active && card.parent && card.parent.cardMoved) card.parent.cardMoved(card)
     onReleased: function(mouse) {
-      if (mouse.button === Qt.LeftButton && card.movable && drag.target)
+      if (!(mouse.button === Qt.LeftButton && card.movable && drag.target)) return
+      var to = card.parent && card.parent.cardReleased ? card.parent.cardReleased(card) : null
+      if (to && (to.x !== card.x || to.y !== card.y)) {
+        snapX.to = to.x
+        snapY.to = to.y
+        snapAnim.restart()
+      } else {
         card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
+      }
     }
+  }
+
+  ParallelAnimation {
+    id: snapAnim
+    NumberAnimation { id: snapX; target: card; property: "x"; duration: 120; easing.type: Easing.OutCubic }
+    NumberAnimation { id: snapY; target: card; property: "y"; duration: 120; easing.type: Easing.OutCubic }
+    onFinished: card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
   }
 
   Column {

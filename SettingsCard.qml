@@ -69,6 +69,32 @@ Card {
     onClicked: card.service.setLocked(!card.service.locked)
   }
 
+  Toggle {
+    width: parent.width
+    visible: !card.service.locked
+    label: "Snap to grid"
+    description: "Show a grid while dragging; line up with other widgets"
+    checked: card.service.snap
+    foreground: card.fg
+    onClicked: card.service.setSnap(!card.service.snap)
+  }
+
+  Flow {
+    width: parent.width
+    visible: !card.service.locked && card.service.snap
+    spacing: Style.spacing.md
+    Repeater {
+      model: [{ n: 12, name: "Fine" }, { n: 24, name: "Medium" }, { n: 48, name: "Coarse" }]
+      Choice {
+        required property var modelData
+        text: modelData.name
+        fontSize: Style.font.caption
+        selected: card.service.gridSize === modelData.n
+        onClicked: card.service.setGridSize(modelData.n)
+      }
+    }
+  }
+
   PanelSeparator { width: parent.width; foreground: card.fg }
 
   component OpacityRow: Column {

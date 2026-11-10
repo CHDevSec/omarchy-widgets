@@ -13,6 +13,8 @@ import Quickshell.Io
 // kept in ~/.local/state/omarchy-widgets/settings.json:
 //   monitor    "all" or a screen name
 //   locked     true stops dragging
+//   snap       false turns off the drag grid and edge guides
+//   gridSize   grid step in px (12, 24 or 48)
 //   widgets    { id: false } hides one
 //   screens    { screenName: { id: { x, y } } } dragged positions
 Item {
@@ -54,6 +56,9 @@ Item {
 
   readonly property string monitor: String(prefs.monitor || "all")
   readonly property bool locked: prefs.locked === true
+  // Dragging snaps to a grid (shown while you drag) and to other widgets' edges.
+  readonly property bool snap: prefs.snap !== false
+  readonly property int gridSize: Number(prefs.gridSize) > 0 ? Number(prefs.gridSize) : 24
 
   // Each widget's own look, never a global one:
   //   background  card background opacity
@@ -102,6 +107,8 @@ Item {
 
   function setMonitor(name) { update(function(p) { p.monitor = name }) }
   function setLocked(on) { update(function(p) { p.locked = !!on }) }
+  function setSnap(on) { update(function(p) { p.snap = !!on }) }
+  function setGridSize(n) { update(function(p) { p.gridSize = n }) }
   function setWidget(id, on) {
     update(function(p) { if (!p.widgets) p.widgets = {}; p.widgets[id] = !!on })
   }

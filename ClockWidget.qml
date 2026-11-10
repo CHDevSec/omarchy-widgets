@@ -36,6 +36,13 @@ Card {
   readonly property string ampm: now.getHours() < 12 ? "AM" : "PM"
   readonly property string line: hours + ":" + minutes + (seconds ? ":" + secs : "")
 
+  // Pixel face: the biggest whole block size that fits the card, and a
+  // one-block shadow in the accent for that hand-drawn sprite look.
+  function pixelDot(columns, most) {
+    return Math.max(2, Math.min(most, Math.floor(contentWidth / Math.max(1, columns))))
+  }
+  readonly property color pixelShadow: Qt.rgba(accent.r, accent.g, accent.b, 0.3)
+
   readonly property real bigSize: Math.round(Style.font.displayLarge * (seconds ? 1.7 : 2.2))
 
   // ------------------------------------------------------------- digital
@@ -73,8 +80,11 @@ Card {
       visible: card.face === "pixel"
       anchors.horizontalCenter: parent.horizontalCenter
       text: card.line + (card.twelve ? " " + card.ampm : "")
-      dot: Math.max(3, Math.floor(card.contentWidth / ((text.length * 6) * 1.1)))
+      dot: card.pixelDot(columns + 1, 10)
       color: card.fg
+      markColor: card.accent
+      marks: ":AMP"
+      shadowColor: card.pixelShadow
     }
   }
 
@@ -106,8 +116,9 @@ Card {
           visible: card.face === "pixel"
           anchors.horizontalCenter: parent.horizontalCenter
           text: modelData
-          dot: 9
+          dot: card.pixelDot(columns + 1, 13)
           color: index === 0 ? card.fg : card.accent
+          shadowColor: card.pixelShadow
         }
       }
     }
@@ -168,23 +179,49 @@ Card {
   }
 
   // ---------------------------------------------------------------- date
+  readonly property string weekday: now.toLocaleDateString(Qt.locale(), "dddd").toUpperCase()
+  readonly property string dateLine: now.toLocaleDateString(Qt.locale(), "d MMMM yyyy").toUpperCase()
+
+  Item {
+    visible: card.face === "pixel"
+    width: parent.width
+    height: pixelDate.y + pixelDate.height
+    PixelText {
+      id: pixelDay
+      anchors.horizontalCenter: parent.horizontalCenter
+      text: card.weekday
+      dot: 3
+      color: card.accent
+    }
+    PixelText {
+      id: pixelDate
+      anchors.horizontalCenter: parent.horizontalCenter
+      y: pixelDay.height + Style.spacing.sm
+      text: card.dateLine
+      dot: 2
+      color: card.dim
+    }
+  }
+
   Text {
+    visible: card.face !== "pixel"
     width: parent.width
     horizontalAlignment: Text.AlignHCenter
-    text: card.now.toLocaleDateString(Qt.locale(), "dddd").toUpperCase()
+    text: card.weekday
     color: card.accent
-    font.family: Style.font.family
+    font.family: card.family
     font.pixelSize: Style.font.caption
     font.bold: true
     font.letterSpacing: 2
     textFormat: Text.PlainText
   }
   Text {
+    visible: card.face !== "pixel"
     width: parent.width
     horizontalAlignment: Text.AlignHCenter
-    text: card.now.toLocaleDateString(Qt.locale(), "d MMMM yyyy").toUpperCase()
+    text: card.dateLine
     color: card.dim
-    font.family: Style.font.family
+    font.family: card.family
     font.pixelSize: Style.font.caption
     font.bold: true
     font.letterSpacing: 1.2
