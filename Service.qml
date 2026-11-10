@@ -219,6 +219,27 @@ Item {
       : Quickshell.env("HOME") + "/.local/share/omarchy-widgets/notes.md"
   }
   TrelloModel { id: trelloObj }
+
+  // Hyprland's gaps, so widgets keep to the area windows tile into: as far
+  // from the bar, dock and screen edges as windows are (gaps_out), and as
+  // far apart as two windows (gaps_in on each).
+  property int gapsOut: 10
+  property int gapsIn: 5
+  Process {
+    running: true
+    command: ["sh", "-c", "hyprctl getoption general:gaps_out -j; echo; hyprctl getoption general:gaps_in -j"]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var parts = text.split("\n").filter(function(l) { return l.trim().length })
+        function first(l) {
+          try { var o = JSON.parse(l); return parseInt(String(o.css !== undefined ? o.css : o.int).split(" ")[0]) } catch (e) { return NaN }
+        }
+        var go = first(parts[0] || ""), gi = first(parts[1] || "")
+        if (!isNaN(go)) root.gapsOut = go
+        if (!isNaN(gi)) root.gapsIn = gi
+      }
+    }
+  }
   AgendaModel { id: agendaObj }
   WeatherModel { id: weatherObj; active: root.widgetOn("weather") }
   WorldClockModel { id: worldObj; active: root.widgetOn("worldclock") }

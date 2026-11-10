@@ -70,14 +70,19 @@ BorderSurface {
   width: contentWidth + leftPadding + rightPadding + borderLeft + borderRight
   height: contentHeight + topPadding + bottomPadding + borderTop + borderBottom
 
+  // The desk's margin: widgets keep to where windows go.
+  readonly property int inset: parent && parent.inset !== undefined ? parent.inset : 0
+  onInsetChanged: place()
+
   function place() {
     if (!movable) return
     var p = service.positionFor(screenName, widgetId)
     var px = p ? p.x : defaultX
     var py = p ? p.y : defaultY
     // Keep it on screen if the resolution changed since it was saved.
-    x = Math.max(0, Math.min(px, (parent ? parent.width : px + vw) - vw))
-    y = Math.max(0, Math.min(py, (parent ? parent.height : py + vh) - vh))
+    var m = inset
+    x = Math.max(m, Math.min(px, (parent ? parent.width : px + vw) - vw - m))
+    y = Math.max(m, Math.min(py, (parent ? parent.height : py + vh) - vh - m))
   }
 
   Component.onCompleted: place()
@@ -101,10 +106,10 @@ BorderSurface {
     cursorShape: drag.active ? Qt.ClosedHandCursor : Qt.ArrowCursor
     drag.target: card.movable && !card.service.locked ? card : null
     drag.threshold: 4
-    drag.minimumX: 0
-    drag.minimumY: 0
-    drag.maximumX: card.parent ? card.parent.width - card.vw : 0
-    drag.maximumY: card.parent ? card.parent.height - card.vh : 0
+    drag.minimumX: card.inset
+    drag.minimumY: card.inset
+    drag.maximumX: card.parent ? card.parent.width - card.vw - card.inset : 0
+    drag.maximumY: card.parent ? card.parent.height - card.vh - card.inset : 0
     hoverEnabled: true
     onPressed: function(mouse) {
       if (mouse.button === Qt.RightButton && card.movable)
@@ -178,8 +183,8 @@ BorderSurface {
         if (!pressed) return
         var p = mapToItem(card.parent, m.x, m.y)
         var g = card.service.snap ? card.service.gridSize : 1
-        var maxW = (card.parent ? card.parent.width - card.x : 4000) / card.zoom - (card.width - card.contentWidth)
-        var maxH = (card.parent ? card.parent.height - card.y : 4000) / card.zoom - (card.height - card.contentHeight)
+        var maxW = (card.parent ? card.parent.width - card.inset - card.x : 4000) / card.zoom - (card.width - card.contentWidth)
+        var maxH = (card.parent ? card.parent.height - card.inset - card.y : 4000) / card.zoom - (card.height - card.contentHeight)
         var w = startW + (p.x - start.x) / card.zoom
         // Snap the right edge to the grid.
         w = Math.round((card.x + w * card.zoom) / g) * g / card.zoom - card.x / card.zoom

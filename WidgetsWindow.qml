@@ -47,8 +47,9 @@ PanelWindow {
     Region { x: trelloCard.x; y: trelloCard.y; width: trelloCard.visible ? trelloCard.vw : 0; height: trelloCard.visible ? trelloCard.vh : 0 }
   }
 
-  readonly property int edge: Style.space(28)
-  readonly property int gap: Style.space(16)
+  // Same spacing as windows: gaps_out from the edges, 2 × gaps_in apart.
+  readonly property int edge: service.gapsOut
+  readonly property int gap: service.gapsIn * 2
 
   function below(cards) {
     var y = edge
@@ -59,6 +60,9 @@ PanelWindow {
   Item {
     id: desk
     anchors.fill: parent
+
+    // Cards stay inside this margin (the windows' gaps_out).
+    readonly property int inset: win.edge
 
     readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard, trelloCard, weekCard]
     // The card being dragged and where it would land; null when none.
@@ -96,12 +100,12 @@ PanelWindow {
         var left = m + Math.round((at - m) / g) * g
         var right = m + Math.round((at + size - m) / g) * g - size
         var v = Math.abs(left - at) <= Math.abs(right - at) ? left : right
-        return Math.max(0, Math.min(v, span - size))
+        return Math.max(m, Math.min(v, span - size - m))
       }
       var gx = pick(xs, c.x), gy = pick(ys, c.y)
       return {
-        x: Math.round(Math.max(0, Math.min(gx ? gx.v : grid(c.x, c.vw, W), W - c.vw))),
-        y: Math.round(Math.max(0, Math.min(gy ? gy.v : grid(c.y, c.vh, H), H - c.vh))),
+        x: Math.round(Math.max(m, Math.min(gx ? gx.v : grid(c.x, c.vw, W), W - c.vw - m))),
+        y: Math.round(Math.max(m, Math.min(gy ? gy.v : grid(c.y, c.vh, H), H - c.vh - m))),
         lineX: gx ? gx.line : -1,
         lineY: gy ? gy.line : -1,
         w: c.vw,
