@@ -10,6 +10,8 @@ PanelWindow {
   id: win
 
   required property var service
+  // The Glass layer, which Hyprland blurs behind, or the plain one.
+  property bool glass: false
   required property var stats
   required property var notes
   required property var weather
@@ -18,7 +20,7 @@ PanelWindow {
   readonly property string screenName: screen ? screen.name : ""
 
   color: "transparent"
-  WlrLayershell.namespace: "omarchy-widgets"
+  WlrLayershell.namespace: glass ? "omarchy-widgets-glass" : "omarchy-widgets"
   WlrLayershell.layer: WlrLayer.Bottom
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
   // Inside the area the bar and dock leave free.
@@ -47,7 +49,7 @@ PanelWindow {
 
   function below(cards) {
     var y = edge
-    for (var i = 0; i < cards.length; i++) if (cards[i].visible) y += cards[i].height + gap
+    for (var i = 0; i < cards.length; i++) if (cards[i].shown) y += cards[i].height + gap
     return y
   }
 
@@ -59,8 +61,8 @@ PanelWindow {
     // at the top left.
     ClockWidget {
       id: clock
-      visible: win.service.widgetOn("clock")
       service: win.service
+      layerGlass: win.glass
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.edge
@@ -68,8 +70,8 @@ PanelWindow {
 
     CalendarWidget {
       id: calendar
-      visible: win.service.widgetOn("calendar")
       service: win.service
+      layerGlass: win.glass
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.below([clock])
@@ -77,8 +79,8 @@ PanelWindow {
 
     SystemWidget {
       id: system
-      visible: win.service.widgetOn("system")
       service: win.service
+      layerGlass: win.glass
       stats: win.stats
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
@@ -87,8 +89,8 @@ PanelWindow {
 
     NotesWidget {
       id: notesCard
-      visible: win.service.widgetOn("notes")
       service: win.service
+      layerGlass: win.glass
       notes: win.notes
       screenName: win.screenName
       defaultX: win.edge
@@ -97,8 +99,8 @@ PanelWindow {
 
     WeatherWidget {
       id: weatherCard
-      visible: win.service.widgetOn("weather")
       service: win.service
+      layerGlass: win.glass
       weather: win.weather
       screenName: win.screenName
       defaultX: win.edge
@@ -107,8 +109,8 @@ PanelWindow {
 
     MediaWidget {
       id: mediaCard
-      visible: win.service.widgetOn("media")
       service: win.service
+      layerGlass: win.glass
       screenName: win.screenName
       defaultX: win.edge
       defaultY: win.below([notesCard, weatherCard])
@@ -116,8 +118,8 @@ PanelWindow {
 
     WorldClockWidget {
       id: worldCard
-      visible: win.service.widgetOn("worldclock")
       service: win.service
+      layerGlass: win.glass
       world: win.world
       screenName: win.screenName
       defaultX: desk.width - width - win.edge

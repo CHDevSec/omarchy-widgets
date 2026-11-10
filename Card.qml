@@ -18,6 +18,12 @@ BorderSurface {
   property real defaultY: 0
   // The settings card is not a widget: it neither drags nor saves.
   property bool movable: true
+  // Which desktop layer this copy is on; it shows on the one matching the
+  // widget's own Glass setting.
+  property bool layerGlass: false
+  readonly property bool shown: movable ? service.widgetOn(widgetId) : true
+  readonly property var look: service.styleOf(widgetId)
+  visible: !movable || (shown && look.glass === layerGlass)
 
   default property alias content: body.data
   property int contentWidth: Style.space(260)
@@ -27,13 +33,13 @@ BorderSurface {
   readonly property color fg: Commons.Color.popups.text
   readonly property color dim: Qt.darker(fg, 1.4)
 
-  // The theme's popup background at the opacity chosen in Settings; the
+  // The theme's popup background at this widget's own opacity; the
   // settings and note cards stay solid so they are always readable.
   readonly property color baseBackground: Commons.Color.popups.background
   color: movable
-    ? Qt.rgba(baseBackground.r, baseBackground.g, baseBackground.b, baseBackground.a * service.backgroundOpacity)
+    ? Qt.rgba(baseBackground.r, baseBackground.g, baseBackground.b, baseBackground.a * look.background)
     : baseBackground
-  opacity: movable ? service.widgetOpacity : 1
+  opacity: movable ? look.opacity : 1
   borderSpec: Border.localOrSurfaceSpec("popups", "border", Commons.Color.popups.border,
     Commons.Color.popups.border, Math.max(1, Style.space(2)))
   radius: Style.cornerRadius
@@ -79,7 +85,7 @@ BorderSurface {
     drag.maximumY: card.parent ? card.parent.height - card.height : 0
     onPressed: function(mouse) {
       if (mouse.button === Qt.RightButton && card.movable)
-        card.service.openSettings(card.screenName, card.x + mouse.x, card.y + mouse.y)
+        card.service.openSettings(card.screenName, card.x + mouse.x, card.y + mouse.y, card.widgetId)
     }
     onReleased: function(mouse) {
       if (mouse.button === Qt.LeftButton && card.movable && drag.target)

@@ -37,9 +37,31 @@ Item {
 
   readonly property string monitor: String(prefs.monitor || "all")
   readonly property bool locked: prefs.locked === true
-  // Card background opacity, and the whole widget's.
-  readonly property real backgroundOpacity: prefs.backgroundOpacity === undefined ? 0.85 : Number(prefs.backgroundOpacity)
-  readonly property real widgetOpacity: prefs.widgetOpacity === undefined ? 1.0 : Number(prefs.widgetOpacity)
+
+  // Each widget's own look, never a global one:
+  //   glass       blurred, see-through card (Hyprland blurs what is behind)
+  //   background  card background opacity
+  //   opacity     the whole widget's opacity
+  function styleOf(id) {
+    var st = prefs.style && prefs.style[id] ? prefs.style[id] : {}
+    return {
+      glass: st.glass === true,
+      // Unset: see-through for glass (a near-solid card would hide the
+      // blur), else the old shared value from 0.3, else 0.85.
+      background: st.background !== undefined ? Number(st.background)
+        : st.glass === true ? 0.45
+        : prefs.backgroundOpacity !== undefined ? Number(prefs.backgroundOpacity) : 0.85,
+      opacity: st.opacity !== undefined ? Number(st.opacity)
+        : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0
+    }
+  }
+  function setStyle(id, key, value) {
+    update(function(p) {
+      if (!p.style) p.style = {}
+      if (!p.style[id]) p.style[id] = {}
+      p.style[id][key] = typeof value === "number" ? Math.round(value * 100) / 100 : value
+    })
+  }
   readonly property var targetScreens: {
     var all = Quickshell.screens
     if (root.monitor === "all") return all
@@ -64,8 +86,6 @@ Item {
   function setWidget(id, on) {
     update(function(p) { if (!p.widgets) p.widgets = {}; p.widgets[id] = !!on })
   }
-  function setBackgroundOpacity(v) { update(function(p) { p.backgroundOpacity = Math.round(v * 100) / 100 }) }
-  function setWidgetOpacity(v) { update(function(p) { p.widgetOpacity = Math.round(v * 100) / 100 }) }
   function resetPositions() { update(function(p) { delete p.screens }) }
 
   function positionFor(screenName, widgetId) {
@@ -84,6 +104,8 @@ Item {
   // The card floating over windows: "settings" or "note" (add a note), on
   // which screen and where (-1 = centred). "" = closed.
   property string overlayKind: ""
+  // The widget the settings card edits; right-clicking one picks it.
+  property string settingsTarget: "clock"
   property string overlayScreen: ""
   property point overlayAt: Qt.point(-1, -1)
   function openOverlay(kind, screenName, x, y) {
@@ -91,7 +113,10 @@ Item {
     overlayScreen = screenName
     overlayKind = kind
   }
-  function openSettings(screenName, x, y) { openOverlay("settings", screenName, x, y) }
+  function openSettings(screenName, x, y, widgetId) {
+    if (widgetId) settingsTarget = widgetId
+    openOverlay("settings", screenName, x, y)
+  }
   function openNoteInput(screenName, x, y) { openOverlay("note", screenName, x, y) }
   function closeSettings() { overlayKind = "" }
 
@@ -129,6 +154,8 @@ Item {
     function lock(): void { root.setLocked(true) }
     function unlock(): void { root.setLocked(false) }
     function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
+    // `glass weather on|off`
+    function glass(id: string, on: string): void { root.setStyle(id, "glass", on === "on" || on === "true") }
     function note(): void {
       var t = root.targetScreens
       root.openNoteInput(t.length > 0 ? t[0].name : "", -1, -1)
@@ -150,8 +177,21 @@ Item {
         id: perScreen
         required property var modelData
 
+        // Two desktop layers: plain cards, and Glass cards, which Hyprland
+        // blurs behind (layer rule in ~/.config/hypr/omarchy-widgets.lua).
+        // Each widget sits on the one its own Glass setting picks.
         WidgetsWindow {
           screen: perScreen.modelData
+          glass: false
+          service: root
+          stats: statsObj
+          notes: notesObj
+          weather: weatherObj
+          world: worldObj
+        }
+        WidgetsWindow {
+          screen: perScreen.modelData
+          glass: true
           service: root
           stats: statsObj
           notes: notesObj

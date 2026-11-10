@@ -115,19 +115,53 @@ Card {
     }
   }
 
-  PanelSectionHeader { text: "OPACITY"; foreground: card.fg }
+  // ------------------------------------------------- this widget's look
+  readonly property string target: card.service.settingsTarget
+  readonly property var targetLook: card.service.styleOf(target)
+  readonly property string targetName: {
+    var c = card.service.catalog
+    for (var i = 0; i < c.length; i++) if (c[i].id === target) return c[i].name
+    return target
+  }
+
+  PanelSectionHeader { text: "LOOK  ·  " + card.targetName.toUpperCase(); foreground: card.fg }
+
+  // Which widget the controls below change; right-clicking one picks it.
+  Flow {
+    width: parent.width
+    spacing: Style.spacing.sm
+    Repeater {
+      model: card.service.catalog.filter(function(w) { return card.service.widgetOn(w.id) })
+      Choice {
+        required property var modelData
+        text: modelData.name
+        fontSize: Style.font.caption
+        selected: card.target === modelData.id
+        onClicked: card.service.settingsTarget = modelData.id
+      }
+    }
+  }
+
+  Toggle {
+    width: parent.width
+    label: "Glass"
+    description: "Frosted, see-through: blurs what is behind this widget"
+    checked: card.targetLook.glass
+    foreground: card.fg
+    onClicked: card.service.setStyle(card.target, "glass", !card.targetLook.glass)
+  }
 
   OpacityRow {
     label: "Background"
-    value: card.service.backgroundOpacity
-    onPicked: function(v) { card.service.setBackgroundOpacity(v) }
+    value: card.targetLook.background
+    onPicked: function(v) { card.service.setStyle(card.target, "background", v) }
   }
 
   OpacityRow {
     label: "Whole widget"
     minimum: 0.2
-    value: card.service.widgetOpacity
-    onPicked: function(v) { card.service.setWidgetOpacity(v) }
+    value: card.targetLook.opacity
+    onPicked: function(v) { card.service.setStyle(card.target, "opacity", v) }
   }
 
   PanelSeparator { width: parent.width; foreground: card.fg }
