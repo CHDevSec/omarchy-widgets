@@ -69,12 +69,30 @@ Card {
     elide: Text.ElideRight
   }
 
-  Text {
+  // Idle: the Omarchy logo in pixel art, breathing, so the card is never empty.
+  Column {
     visible: !card.player
-    text: "Nothing playing"
-    color: card.dim
-    font.family: Style.font.family
-    font.pixelSize: Style.font.bodySmall
+    width: parent.width
+    spacing: Style.spacing.md
+    topPadding: Style.spacing.md
+    bottomPadding: Style.spacing.sm
+
+    OmarchyLogo {
+      anchors.horizontalCenter: parent.horizontalCenter
+      color: card.tint
+      dot: 2
+      scanColor: Qt.rgba(card.baseBackground.r, card.baseBackground.g, card.baseBackground.b, 0.6)
+      animated: card.visible && !card.player
+    }
+    Text {
+      anchors.horizontalCenter: parent.horizontalCenter
+      text: "NOTHING PLAYING"
+      color: card.dim
+      font.family: Style.font.family
+      font.pixelSize: Style.font.caption
+      font.bold: true
+      font.letterSpacing: 2
+    }
   }
 
   Row {
