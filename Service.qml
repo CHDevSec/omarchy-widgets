@@ -9,26 +9,56 @@ import Quickshell.Io
 // windows cover them, the way macOS desktop widgets behave. Only the cards
 // take input; the rest of the surface lets clicks through.
 //
-// Positions are dragged in place and remembered per screen in
-// ~/.local/state/omarchy-widgets/positions.json.
+// Everything is set from the widgets themselves (right-click any card) and
+// kept in ~/.local/state/omarchy-widgets/settings.json:
+//   monitor    "all" or a screen name
+//   locked     true stops dragging
+//   widgets    { id: false } hides one
+//   screens    { screenName: { id: { x, y } } } dragged positions
 Item {
   id: root
 
   // Injected by omarchy-shell's service loader.
   property var shell: null
 
-  // The screen the widgets live on: the one named in positions.json's
-  // "monitor" key, else the first screen.
-  readonly property string monitor: String(prefs.monitor || "")
+  // Every widget the plugin draws, in the order Settings lists them.
+  readonly property var catalog: [
+    { id: "clock", name: "Clock", description: "The time, large, with the date" },
+    { id: "calendar", name: "Calendar", description: "This month, today marked" },
+    { id: "system", name: "System", description: "CPU, memory, disk and battery" },
+    { id: "notes", name: "Notes", description: "Quick notes and to-dos, Claude's included" }
+  ]
+
+  // ------------------------------------------------------------- settings
+  property var prefs: ({})
+
+  readonly property string monitor: String(prefs.monitor || "all")
+  readonly property bool locked: prefs.locked === true
   readonly property var targetScreens: {
     var all = Quickshell.screens
+    if (root.monitor === "all") return all
     for (var i = 0; i < all.length; i++)
       if (all[i].name === root.monitor) return [all[i]]
-    return all.length > 0 ? [all[0]] : []
+    return all
   }
 
-  // ------------------------------------------------------------ positions
-  property var prefs: ({})
+  function widgetOn(id) {
+    return !(prefs.widgets && prefs.widgets[id] === false)
+  }
+
+  function update(mutate) {
+    var next = JSON.parse(JSON.stringify(prefs || {}))
+    mutate(next)
+    prefs = next
+    saveTimer.restart()
+  }
+
+  function setMonitor(name) { update(function(p) { p.monitor = name }) }
+  function setLocked(on) { update(function(p) { p.locked = !!on }) }
+  function setWidget(id, on) {
+    update(function(p) { if (!p.widgets) p.widgets = {}; p.widgets[id] = !!on })
+  }
+  function resetPositions() { update(function(p) { delete p.screens }) }
 
   function positionFor(screenName, widgetId) {
     var s = prefs.screens && prefs.screens[screenName]
@@ -36,25 +66,33 @@ Item {
   }
 
   function savePosition(screenName, widgetId, x, y) {
-    var next = JSON.parse(JSON.stringify(prefs || {}))
-    if (!next.screens) next.screens = {}
-    if (!next.screens[screenName]) next.screens[screenName] = {}
-    next.screens[screenName][widgetId] = { x: Math.round(x), y: Math.round(y) }
-    prefs = next
-    saveTimer.restart()
+    update(function(p) {
+      if (!p.screens) p.screens = {}
+      if (!p.screens[screenName]) p.screens[screenName] = {}
+      p.screens[screenName][widgetId] = { x: Math.round(x), y: Math.round(y) }
+    })
   }
+
+  // Which screen shows the settings card, and where (-1 = centred);
+  // "" = closed.
+  property string settingsScreen: ""
+  property point settingsAt: Qt.point(-1, -1)
+  function openSettings(screenName, x, y) {
+    settingsAt = Qt.point(x, y)
+    settingsScreen = screenName
+  }
+  function closeSettings() { settingsScreen = "" }
 
   readonly property string stateDir: Quickshell.env("HOME") + "/.local/state/omarchy-widgets"
 
   Process {
-    id: mkdir
     command: ["mkdir", "-p", root.stateDir]
     running: true
   }
 
   FileView {
-    id: stateFile
-    path: root.stateDir + "/positions.json"
+    id: settingsFile
+    path: root.stateDir + "/settings.json"
     atomicWrites: true
     printErrors: false
     onLoaded: {
@@ -62,26 +100,50 @@ Item {
     }
   }
 
-  // Dragging writes once it settles, not on every release.
   Timer {
     id: saveTimer
     interval: 400
-    onTriggered: stateFile.setText(JSON.stringify(root.prefs, null, 2) + "\n")
+    onTriggered: settingsFile.setText(JSON.stringify(root.prefs, null, 2) + "\n")
   }
 
-  // ---------------------------------------------------------------- stats
-  // One shared sampler for every screen's system card.
+  // `omarchy-shell omarchy-widgets settings`, for a keybind.
+  IpcHandler {
+    target: "omarchy-widgets"
+    function settings(): void {
+      var t = root.targetScreens
+      root.openSettings(t.length > 0 ? t[0].name : "", -1, -1)
+    }
+    function close(): void { root.closeSettings() }
+    function lock(): void { root.setLocked(true) }
+    function unlock(): void { root.setLocked(false) }
+    function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
+  }
+
+  // ---------------------------------------------------------------- data
+  // Shared by every screen's cards.
   SystemStats { id: statsObj }
+  NotesModel { id: notesObj }
 
   Variants {
     model: root.targetScreens
 
     delegate: Component {
-      WidgetsWindow {
+      Scope {
+        id: perScreen
         required property var modelData
-        screen: modelData
-        service: root
-        stats: statsObj
+
+        WidgetsWindow {
+          screen: perScreen.modelData
+          service: root
+          stats: statsObj
+          notes: notesObj
+        }
+
+        // Settings float over windows, so they can be opened from anywhere.
+        SettingsWindow {
+          screen: perScreen.modelData
+          service: root
+        }
       }
     }
   }

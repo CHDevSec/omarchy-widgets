@@ -11,6 +11,9 @@ PanelWindow {
 
   required property var service
   required property var stats
+  required property var notes
+
+  readonly property string screenName: screen ? screen.name : ""
 
   color: "transparent"
   WlrLayershell.namespace: "omarchy-widgets"
@@ -28,42 +31,63 @@ PanelWindow {
   }
 
   mask: Region {
-    Region { item: clock }
-    Region { item: calendar }
-    Region { item: system }
+    Region { item: clock.visible ? clock : null }
+    Region { item: calendar.visible ? calendar : null }
+    Region { item: system.visible ? system : null }
+    Region { item: notesCard.visible ? notesCard : null }
   }
 
   readonly property int edge: Style.space(28)
   readonly property int gap: Style.space(16)
 
+  function below(cards) {
+    var y = edge
+    for (var i = 0; i < cards.length; i++) if (cards[i].visible) y += cards[i].height + gap
+    return y
+  }
+
   Item {
     id: desk
     anchors.fill: parent
 
-    // Default layout: a column at the top right, like macOS's.
+    // Default layout: a column at the top right, like macOS's, and notes
+    // at the top left.
     ClockWidget {
       id: clock
+      visible: win.service.widgetOn("clock")
       service: win.service
-      screenName: win.screen ? win.screen.name : ""
+      screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.edge
     }
 
     CalendarWidget {
       id: calendar
+      visible: win.service.widgetOn("calendar")
       service: win.service
-      screenName: win.screen ? win.screen.name : ""
+      screenName: win.screenName
       defaultX: desk.width - width - win.edge
-      defaultY: win.edge + clock.height + win.gap
+      defaultY: win.below([clock])
     }
 
     SystemWidget {
       id: system
+      visible: win.service.widgetOn("system")
       service: win.service
       stats: win.stats
-      screenName: win.screen ? win.screen.name : ""
+      screenName: win.screenName
       defaultX: desk.width - width - win.edge
-      defaultY: win.edge + clock.height + win.gap + calendar.height + win.gap
+      defaultY: win.below([clock, calendar])
+    }
+
+    NotesWidget {
+      id: notesCard
+      visible: win.service.widgetOn("notes")
+      service: win.service
+      notes: win.notes
+      screenName: win.screenName
+      defaultX: win.edge
+      defaultY: win.edge
     }
   }
 }

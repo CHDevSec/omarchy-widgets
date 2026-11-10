@@ -1,0 +1,13 @@
+#!/bin/sh
+# Add a note to the Omarchy Widgets Notes card.
+#   omarchy-widgets-note "text"          a to-do
+#   omarchy-widgets-note --note "text"   a plain note
+set -eu
+dir="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-widgets"
+mkdir -p "$dir"
+mark="- [ ] "
+if [ "${1:-}" = "--note" ]; then mark="- "; shift; fi
+[ $# -gt 0 ] || { echo "usage: omarchy-widgets-note [--note] text" >&2; exit 2; }
+# One line per note: newlines in the text would split it.
+text=$(printf '%s' "$*" | tr '\n' ' ')
+printf '%s%s\n' "$mark" "$text" >> "$dir/notes.md"

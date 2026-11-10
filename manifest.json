@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.chdevsec.omarchy-widgets",
   "name": "Omarchy Widgets",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "CHDevSec",
   "license": "MIT",
-  "description": "Desktop widgets that sit on the wallpaper, under your windows, drawn with Omarchy's own panels and theme: a clock, a calendar and system stats. Drag them anywhere.",
+  "description": "Desktop widgets that sit on the wallpaper, under your windows, drawn with Omarchy's own panels and theme: a clock, a calendar, system stats and quick notes. Drag them anywhere, lock them in place, pick the screens; right-click any widget for settings.",
   "kinds": [
     "service"
   ],
