@@ -11,6 +11,7 @@ Card {
   widgetId: "media"
   contentWidth: Style.space(300)
 
+  readonly property color tint: pal.magenta
   readonly property var players: Mpris.players.values
   readonly property var player: {
     var list = players
@@ -40,14 +41,14 @@ Card {
     width: big ? Style.spacing.controlHeight * 1.6 : Style.spacing.controlHeight * 1.2
     height: Style.spacing.controlHeight
     radius: Style.cornerRadius
-    color: ctlMouse.containsMouse && enabledHere ? Style.hoverFill : "transparent"
+    color: big ? card.tint : (ctlMouse.containsMouse && enabledHere ? Style.hoverFill : "transparent")
     border.width: 1
-    border.color: Qt.rgba(card.fg.r, card.fg.g, card.fg.b, ctlMouse.containsMouse ? 0.6 : 0.3)
-    opacity: enabledHere ? 1 : 0.4
+    border.color: big ? card.tint : Qt.rgba(card.fg.r, card.fg.g, card.fg.b, ctlMouse.containsMouse ? 0.6 : 0.3)
+    opacity: enabledHere ? (big && ctlMouse.containsMouse ? 0.85 : 1) : 0.4
     Text {
       anchors.centerIn: parent
       text: ctl.glyph
-      color: card.fg
+      color: ctl.big ? Commons.Color.background : card.fg
       font.family: Style.font.family
       font.pixelSize: ctl.big ? Style.font.iconLarge : Style.font.icon
     }
@@ -158,7 +159,7 @@ Card {
         height: parent.height
         width: card.player && card.player.length > 0
           ? Math.min(1, card.player.position / card.player.length) * parent.width : 0
-        color: card.fg
+        color: card.tint
       }
     }
     Item {

@@ -29,6 +29,10 @@ BorderSurface {
 
   readonly property color fg: Commons.Color.popups.text
   readonly property color dim: Qt.darker(fg, 1.4)
+  // The theme's colours (ThemeColors.qml). Cards can be built before the
+  // service's palette is bound, so they fall back to plain text colours.
+  readonly property var pal: service && service.colors ? service.colors
+    : ({ red: fg, green: fg, yellow: fg, blue: fg, magenta: fg, cyan: fg, grey: dim })
 
   // The theme's popup background at this widget's own opacity; the
   // settings and note cards stay solid so they are always readable.

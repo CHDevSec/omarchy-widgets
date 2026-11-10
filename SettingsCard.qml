@@ -142,6 +142,58 @@ Card {
     }
   }
 
+  // The clock's own options.
+  Column {
+    visible: card.target === "clock"
+    width: parent.width
+    spacing: Style.spacing.rowGap
+
+    readonly property var installed: Qt.fontFamilies()
+
+    PanelSectionHeader { text: "FACE"; foreground: card.fg }
+    Flow {
+      width: parent.width
+      spacing: Style.spacing.sm
+      Repeater {
+        model: card.service.clockFaces.filter(function(f) {
+          return f.id === "theme" || f.id === "pixel" || parent.parent.installed.indexOf(f.id) !== -1
+        })
+        Choice {
+          required property var modelData
+          text: modelData.name
+          fontSize: Style.font.caption
+          selected: card.service.option("clock", "face", "theme") === modelData.id
+          onClicked: card.service.setStyle("clock", "face", modelData.id)
+        }
+      }
+    }
+
+    PanelSectionHeader { text: "FORMAT"; foreground: card.fg }
+    Flow {
+      width: parent.width
+      spacing: Style.spacing.sm
+      Repeater {
+        model: card.service.clockFormats
+        Choice {
+          required property var modelData
+          text: modelData.name
+          fontSize: Style.font.caption
+          selected: card.service.option("clock", "format", "24h") === modelData.id
+          onClicked: card.service.setStyle("clock", "format", modelData.id)
+        }
+      }
+    }
+
+    Toggle {
+      width: parent.width
+      label: "Seconds"
+      description: "Tick every second"
+      checked: card.service.option("clock", "seconds", false) === true
+      foreground: card.fg
+      onClicked: card.service.setStyle("clock", "seconds", !(card.service.option("clock", "seconds", false) === true))
+    }
+  }
+
   OpacityRow {
     label: "Background"
     value: card.targetLook.background

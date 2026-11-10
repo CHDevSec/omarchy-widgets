@@ -3,7 +3,10 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 
-// CPU, memory, disk and battery as Omarchy-style meters.
+// CPU, memory, disk and battery as four square tiles, each in its own
+// theme colour (the way btop colours them): a big number, its label, and a
+// block meter along the bottom. A tile turns the theme's red when it runs
+// hot (90 %+) or the battery runs low.
 Card {
   id: card
   widgetId: "system"
@@ -15,79 +18,89 @@ Card {
     foreground: card.fg
   }
 
-  PanelSeparator { width: parent.width; foreground: card.fg }
-
-  component Meter: Column {
-    id: meter
+  component Tile: Rectangle {
+    id: tile
     property string label
     property string detail
     property real value: 0
+    property color tint: card.fg
     property bool warn: value >= 0.9
-    width: parent.width
-    spacing: Style.spacing.xs
+    readonly property color shown: warn ? card.pal.red : tint
 
-    Item {
-      width: parent.width
-      height: labelText.implicitHeight
+    width: (card.contentWidth - Style.spacing.md) / 2
+    height: tileBody.implicitHeight + Style.spacing.lg * 2
+    radius: Style.cornerRadius
+    color: Qt.rgba(shown.r, shown.g, shown.b, 0.08)
+    border.width: 1
+    border.color: Qt.rgba(shown.r, shown.g, shown.b, 0.35)
+
+    Column {
+      id: tileBody
+      x: Style.spacing.lg
+      y: Style.spacing.lg
+      width: parent.width - Style.spacing.lg * 2
+      spacing: Style.spacing.xs
+
       Text {
-        id: labelText
-        text: meter.label
-        color: card.fg
+        text: Math.round(tile.value * 100) + "%"
+        color: tile.shown
         font.family: Style.font.family
-        font.pixelSize: Style.font.bodySmall
+        font.pixelSize: Style.font.display
         font.bold: true
-        textFormat: Text.PlainText
       }
       Text {
-        anchors.right: parent.right
-        text: meter.detail
+        width: parent.width
+        text: tile.label + (tile.detail ? "  ·  " + tile.detail : "")
         color: card.dim
         font.family: Style.font.family
         font.pixelSize: Style.font.caption
+        font.bold: true
+        elide: Text.ElideRight
         textFormat: Text.PlainText
       }
-    }
-
-    Rectangle {
-      width: parent.width
-      height: Style.space(6)
-      radius: Style.cornerRadius > 0 ? height / 2 : 0
-      color: Qt.rgba(card.fg.r, card.fg.g, card.fg.b, 0.12)
-
-      Rectangle {
-        width: Math.max(0, Math.min(1, meter.value)) * parent.width
-        height: parent.height
-        radius: parent.radius
-        color: meter.warn ? Commons.Color.urgent : card.fg
-        Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
+      // Ten square blocks, lit up to the value.
+      Row {
+        spacing: 2
+        Repeater {
+          model: 10
+          Rectangle {
+            width: (tileBody.width - 2 * 9) / 10
+            height: Style.space(5)
+            color: index < Math.round(tile.value * 10)
+              ? tile.shown : Qt.rgba(tile.shown.r, tile.shown.g, tile.shown.b, 0.15)
+          }
+        }
       }
     }
   }
 
-  Meter {
-    label: "CPU"
-    value: card.stats.cpu
-    detail: Math.round(card.stats.cpu * 100) + "%"
-  }
+  Grid {
+    columns: 2
+    spacing: Style.spacing.md
 
-  Meter {
-    label: "MEMORY"
-    value: card.stats.memory
-    detail: card.stats.memoryUsedGiB.toFixed(1) + " / " + card.stats.memoryTotalGiB.toFixed(1) + " GiB"
-  }
-
-  Meter {
-    label: "DISK"
-    value: card.stats.disk
-    detail: Math.round(card.stats.diskUsedGiB) + " / " + Math.round(card.stats.diskTotalGiB) + " GiB"
-  }
-
-  Meter {
-    visible: card.stats.battery >= 0
-    label: "BATTERY"
-    value: card.stats.battery / 100
-    warn: card.stats.battery >= 0 && card.stats.battery <= 15 && card.stats.batteryStatus !== "Charging"
-    detail: card.stats.battery + "%" + (card.stats.batteryStatus === "Charging" ? " · charging"
-      : card.stats.batteryStatus === "Full" ? " · full" : "")
+    Tile {
+      label: "CPU"
+      value: card.stats.cpu
+      tint: card.pal.blue
+    }
+    Tile {
+      label: "MEM"
+      detail: card.stats.memoryUsedGiB.toFixed(1) + "G"
+      value: card.stats.memory
+      tint: card.pal.magenta
+    }
+    Tile {
+      label: "DISK"
+      detail: Math.round(card.stats.diskUsedGiB) + "G"
+      value: card.stats.disk
+      tint: card.pal.cyan
+    }
+    Tile {
+      visible: card.stats.battery >= 0
+      label: card.stats.batteryStatus === "Charging" ? "BAT ⚡" : "BAT"
+      value: Math.max(0, card.stats.battery) / 100
+      tint: card.pal.green
+      warn: card.stats.battery >= 0 && card.stats.battery <= 15 && card.stats.batteryStatus !== "Charging"
+    }
   }
 }

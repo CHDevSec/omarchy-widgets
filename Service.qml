@@ -32,6 +32,23 @@ Item {
     { id: "worldclock", name: "World Clock", description: "The cities from the bar's Elsewhen" }
   ]
 
+  // The clock's faces and formats, as Settings offers them. Font faces
+  // missing on this machine are left out there.
+  readonly property var clockFaces: [
+    { id: "theme", name: "Omarchy" },
+    { id: "pixel", name: "Pixel" },
+    { id: "Adwaita Sans", name: "Sans" },
+    { id: "Nimbus Sans Narrow", name: "Narrow" },
+    { id: "C059", name: "Serif" },
+    { id: "iA Writer Quattro S", name: "Writer" }
+  ]
+  readonly property var clockFormats: [
+    { id: "24h", name: "24h" },
+    { id: "12h", name: "12h" },
+    { id: "stacked", name: "Stacked" },
+    { id: "analog", name: "Analog" }
+  ]
+
   // ------------------------------------------------------------- settings
   property var prefs: ({})
 
@@ -51,6 +68,12 @@ Item {
         : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0
     }
   }
+  // A widget's own option (clock face, format…), with a default.
+  function option(id, key, fallback) {
+    var st = prefs.style && prefs.style[id] ? prefs.style[id] : {}
+    return st[key] === undefined ? fallback : st[key]
+  }
+
   function setStyle(id, key, value) {
     update(function(p) {
       if (!p.style) p.style = {}
@@ -150,6 +173,10 @@ Item {
     function lock(): void { root.setLocked(true) }
     function unlock(): void { root.setLocked(false) }
     function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
+    // `set clock face pixel`, `set clock seconds true`
+    function set(id: string, key: string, value: string): void {
+      root.setStyle(id, key, value === "true" ? true : value === "false" ? false : value)
+    }
     function note(): void {
       var t = root.targetScreens
       root.openNoteInput(t.length > 0 ? t[0].name : "", -1, -1)
@@ -158,6 +185,10 @@ Item {
 
   // ---------------------------------------------------------------- data
   // Shared by every screen's cards.
+  // The theme's own colours, one per widget.
+  readonly property var colors: paletteObj
+  ThemeColors { id: paletteObj }
+
   SystemStats { id: statsObj }
   NotesModel { id: notesObj }
   WeatherModel { id: weatherObj; active: root.widgetOn("weather") }

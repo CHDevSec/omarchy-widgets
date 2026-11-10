@@ -19,9 +19,14 @@ Card {
     onTriggered: card.now = new Date()
   }
 
+  // Bound once on the card: city rows can be made before the palette is.
+  readonly property color sun: pal.yellow
+  readonly property color moon: pal.blue
+  readonly property color tint: pal.cyan
+
   readonly property int hereOffset: -now.getTimezoneOffset()
 
-  PanelSectionHeader { text: "WORLD CLOCK"; foreground: card.fg }
+  PanelSectionHeader { text: "WORLD CLOCK"; foreground: card.fg; color: card.tint }
 
   PanelSeparator { width: parent.width; foreground: card.fg }
 
@@ -32,6 +37,7 @@ Card {
       id: row
       required property var modelData
       readonly property date there: card.world.timeIn(modelData, card.now)
+      readonly property bool day: there.getHours() >= 6 && there.getHours() < 18
       readonly property int diff: Math.round((modelData.offsetMinutes - card.hereOffset) / 60)
       readonly property string dayHint: {
         var d = there.getDate() - card.now.getDate()
@@ -60,15 +66,26 @@ Card {
         }
       }
 
-      Text {
-        id: time
+      Row {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
+        spacing: Style.spacing.md
+        // Sun or moon, in the sky's colour.
+        Text {
+          anchors.verticalCenter: parent.verticalCenter
+          text: row.day ? "󰖙" : "󰖔"
+          color: row.day ? card.sun : card.moon
+          font.family: Style.font.family
+          font.pixelSize: Style.font.iconLarge
+        }
+      Text {
+        id: time
         text: Qt.formatTime(row.there, "HH:mm")
-        color: card.fg
+        color: row.day ? card.fg : card.dim
         font.family: Style.font.family
         font.pixelSize: Style.font.display
         font.bold: true
+      }
       }
     }
   }

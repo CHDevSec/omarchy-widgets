@@ -59,6 +59,7 @@ Card {
       anchors.verticalCenter: parent.verticalCenter
       text: "NOTES"
       foreground: card.fg
+      color: card.pal.yellow
     }
     Text {
       anchors.left: header.right
@@ -66,7 +67,7 @@ Card {
       anchors.verticalCenter: parent.verticalCenter
       visible: card.openCount > 0
       text: card.openCount + " OPEN"
-      color: Commons.Color.accent
+      color: card.pal.yellow
       font.family: Style.font.family
       font.pixelSize: Style.font.caption
       font.bold: true
@@ -124,10 +125,10 @@ Card {
           height: width
           radius: 0
           color: row.modelData.todo
-            ? (row.modelData.done ? Commons.Color.accent : "transparent")
+            ? (row.modelData.done ? card.pal.green : "transparent")
             : card.dim
           border.width: row.modelData.todo ? 1 : 0
-          border.color: row.modelData.done ? Commons.Color.accent
+          border.color: row.modelData.done ? card.pal.green
             : Qt.rgba(card.fg.r, card.fg.g, card.fg.b, row.hot ? 0.9 : 0.5)
           Text {
             anchors.centerIn: parent
