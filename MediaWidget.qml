@@ -9,7 +9,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "media"
-  contentWidth: Style.space(300)
+  defaultWidth: Style.space(300)
 
   readonly property color tint: pal.magenta
   readonly property var players: Mpris.players.values

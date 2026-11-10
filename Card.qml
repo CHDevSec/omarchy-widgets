@@ -33,7 +33,16 @@ BorderSurface {
   readonly property real vh: height * zoom
 
   default property alias content: body.data
-  property int contentWidth: Style.space(260)
+  // Natural width; the user can stretch it (grip) to any width from 60 %.
+  property int defaultWidth: Style.space(260)
+  property real liveWidth: -1
+  property real liveHeight: -1
+  readonly property real stretchWidth: liveWidth > 0 ? liveWidth : (movable ? look.width : 0)
+  readonly property real stretchHeight: liveHeight > 0 ? liveHeight : (movable ? look.height : 0)
+  readonly property int contentWidth: stretchWidth > 0
+    ? Math.round(Math.max(defaultWidth * 0.6, stretchWidth)) : defaultWidth
+  // The height the content should fill when stretched (0 = its own).
+  readonly property real contentHeight: Math.max(body.implicitHeight, stretchHeight)
   // For children that need clicks of their own (note to-dos).
   readonly property bool dragging: dragArea.drag.active
 
@@ -57,7 +66,7 @@ BorderSurface {
   padding: Style.spacing.popupPadding
 
   width: contentWidth + leftPadding + rightPadding + borderLeft + borderRight
-  height: body.implicitHeight + topPadding + bottomPadding + borderTop + borderBottom
+  height: contentHeight + topPadding + bottomPadding + borderTop + borderBottom
 
   function place() {
     if (!movable) return
@@ -122,8 +131,10 @@ BorderSurface {
     onFinished: card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
   }
 
-  // Resize: a corner grip, shown on hover when the widgets aren't locked.
-  // Dragging it scales the widget; the grid snaps the size to 5 % steps.
+  // Stretch: a corner grip, shown on hover when the widgets aren't locked.
+  // Drag it to make the widget wider, narrower or taller (widths snap to the
+  // grid); double-click it to go back to the natural size. The Size slider
+  // in settings scales the whole widget instead.
   Item {
     id: grip
     z: 10
@@ -153,25 +164,48 @@ BorderSurface {
       anchors.margins: -Style.space(4)
       hoverEnabled: true
       cursorShape: Qt.SizeFDiagCursor
-      property real startX: 0
-      property real startZoom: 1
+      property point start
+      property real startW: 0
+      property real startH: 0
       onPressed: function(m) {
-        startX = mapToItem(card.parent, m.x, m.y).x
-        startZoom = card.zoom
-        card.liveZoom = card.zoom
+        start = mapToItem(card.parent, m.x, m.y)
+        startW = card.contentWidth
+        startH = card.contentHeight
       }
       onPositionChanged: function(m) {
         if (!pressed) return
-        var dx = mapToItem(card.parent, m.x, m.y).x - startX
-        var z = startZoom * (card.width * startZoom + dx) / (card.width * startZoom)
-        card.liveZoom = Math.max(0.6, Math.min(2, Math.round(z * 20) / 20))
+        var p = mapToItem(card.parent, m.x, m.y)
+        var g = card.service.snap ? card.service.gridSize : 1
+        var maxW = (card.parent ? card.parent.width - card.x : 4000) / card.zoom - (card.width - card.contentWidth)
+        var maxH = (card.parent ? card.parent.height - card.y : 4000) / card.zoom - (card.height - card.contentHeight)
+        var w = startW + (p.x - start.x) / card.zoom
+        // Snap the right edge to the grid.
+        w = Math.round((card.x + w * card.zoom) / g) * g / card.zoom - card.x / card.zoom
+        w = Math.max(card.defaultWidth * 0.6, Math.min(maxW, w))
+        var h = Math.max(body.implicitHeight, Math.min(maxH, startH + (p.y - start.y) / card.zoom))
+        // Let the desk snap the on-screen size to other widgets' sizes and edges.
+        var chrome = card.width - card.contentWidth, chromeH = card.height - card.contentHeight
+        if (card.parent && card.parent.cardStretched) {
+          var snapped = card.parent.cardStretched(card, (w + chrome) * card.zoom, (h + chromeH) * card.zoom)
+          w = snapped.w / card.zoom - chrome
+          h = snapped.h / card.zoom - chromeH
+        }
+        card.liveWidth = Math.max(card.defaultWidth * 0.6, w)
+        card.liveHeight = Math.max(0, h)
       }
       onReleased: {
-        var z = card.liveZoom
-        card.service.setStyle(card.widgetId, "scale", z)
-        card.liveZoom = -1
+        card.service.setStyle(card.widgetId, "width", Math.round(card.liveWidth))
+        // Only keep a height taller than the content needs.
+        card.service.setStyle(card.widgetId, "height", card.liveHeight > body.implicitHeight + 2 ? Math.round(card.liveHeight) : 0)
+        card.liveWidth = -1
+        card.liveHeight = -1
+        if (card.parent && card.parent.cardStretchEnded) card.parent.cardStretchEnded()
         card.place()
         card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
+      }
+      onDoubleClicked: {
+        card.service.setStyle(card.widgetId, "width", 0)
+        card.service.setStyle(card.widgetId, "height", 0)
       }
     }
   }

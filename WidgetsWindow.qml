@@ -109,6 +109,39 @@ PanelWindow {
       }
     }
 
+    // While a card is being stretched: its size snaps to another widget's
+    // width or height (to make them match) and its edges to other widgets'
+    // edges; the guide says which.
+    function cardStretched(c, vw, vh) {
+      if (!win.service.snap) { moving = null; target = null; return { w: vw, h: vh } }
+      var near = Math.max(8, win.service.gridSize * 0.5)
+      var bestW = null, bestH = null
+      for (var i = 0; i < cards.length; i++) {
+        var o = cards[i]
+        if (o === c || !o.visible) continue
+        var name = o.widgetId.charAt(0).toUpperCase() + o.widgetId.slice(1)
+        var ws = [{ v: o.vw, label: "= " + name, line: c.x + o.vw },
+                  { v: o.x + o.vw - c.x, label: "", line: o.x + o.vw },
+                  { v: o.x - win.gap - c.x, label: "", line: o.x - win.gap }]
+        var hs = [{ v: o.vh, label: "= " + name, line: c.y + o.vh },
+                  { v: o.y + o.vh - c.y, label: "", line: o.y + o.vh },
+                  { v: o.y - win.gap - c.y, label: "", line: o.y - win.gap }]
+        for (var j = 0; j < 3; j++) {
+          var dw = Math.abs(ws[j].v - vw)
+          if (ws[j].v > 0 && dw <= near && (!bestW || dw < bestW.d)) bestW = { v: ws[j].v, d: dw, label: ws[j].label, line: ws[j].line }
+          var dh = Math.abs(hs[j].v - vh)
+          if (hs[j].v > 0 && dh <= near && (!bestH || dh < bestH.d)) bestH = { v: hs[j].v, d: dh, label: hs[j].label, line: hs[j].line }
+        }
+      }
+      var w = bestW ? bestW.v : vw, h = bestH ? bestH.v : vh
+      moving = c
+      target = { x: c.x, y: c.y, w: w, h: h, lineX: bestW ? bestW.line : -1, lineY: bestH ? bestH.line : -1,
+                 label: [bestW ? bestW.label : "", bestH ? bestH.label.replace("=", "↕ =") : ""].filter(function(t) { return t }).join("   ")
+                   || Math.round(w) + " × " + Math.round(h) }
+      return { w: w, h: h }
+    }
+    function cardStretchEnded() { moving = null; target = null }
+
     function cardMoved(c) {
       if (!win.service.snap) return
       for (var i = 0; i < cards.length; i++) cards[i].z = cards[i] === c ? 2 : 0
@@ -163,6 +196,27 @@ PanelWindow {
         color: Qt.rgba(guides.accent.r, guides.accent.g, guides.accent.b, 0.10)
         border.width: 2
         border.color: guides.accent
+
+        // While stretching: the size, or which widget it now matches.
+        Rectangle {
+          visible: desk.target !== null && desk.target.label !== undefined && desk.target.label !== ""
+          anchors.right: parent.right
+          anchors.top: parent.bottom
+          anchors.topMargin: Style.spacing.xs
+          width: sizeText.implicitWidth + Style.spacing.md * 2
+          height: sizeText.implicitHeight + Style.spacing.xs * 2
+          radius: Style.cornerRadius
+          color: guides.accent
+          Text {
+            id: sizeText
+            anchors.centerIn: parent
+            text: desk.target && desk.target.label ? desk.target.label : ""
+            color: Commons.Color.background
+            font.family: Style.font.family
+            font.pixelSize: Style.font.caption
+            font.bold: true
+          }
+        }
       }
 
       // Lined up with another widget or the margin.

@@ -10,7 +10,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "trello"
-  contentWidth: Style.space(320)
+  defaultWidth: Style.space(320)
 
   required property var trello
   readonly property int maxPerSection: 4

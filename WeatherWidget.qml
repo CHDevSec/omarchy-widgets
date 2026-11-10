@@ -7,7 +7,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "weather"
-  contentWidth: Style.space(280)
+  defaultWidth: Style.space(280)
 
   required property var weather
 

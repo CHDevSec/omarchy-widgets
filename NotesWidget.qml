@@ -9,7 +9,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "notes"
-  contentWidth: Style.space(300)
+  defaultWidth: Style.space(300)
 
   required property var notes
   readonly property int maxShown: 10

@@ -11,7 +11,7 @@ Card {
   id: card
   widgetId: "settings"
   movable: false
-  contentWidth: Style.space(300)
+  defaultWidth: Style.space(300)
 
   component Choice: Button {
     bordered: true

@@ -8,7 +8,7 @@ Card {
   id: card
   widgetId: "note-input"
   movable: false
-  contentWidth: Style.space(320)
+  defaultWidth: Style.space(320)
 
   required property var notes
   property bool active: false

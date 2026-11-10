@@ -7,7 +7,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "worldclock"
-  contentWidth: Style.space(260)
+  defaultWidth: Style.space(260)
 
   required property var world
 

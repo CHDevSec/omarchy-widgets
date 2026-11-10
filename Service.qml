@@ -74,7 +74,10 @@ Item {
       opacity: st.opacity !== undefined ? Number(st.opacity)
         : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0,
       // Size: the whole widget scaled, 0.6× to 2×.
-      scale: st.scale !== undefined ? Math.max(0.6, Math.min(2, Number(st.scale))) : 1.0
+      scale: st.scale !== undefined ? Math.max(0.6, Math.min(2, Number(st.scale))) : 1.0,
+      // Stretch: the content's width and height in px; 0 = its natural size.
+      width: Number(st.width) > 0 ? Number(st.width) : 0,
+      height: Number(st.height) > 0 ? Number(st.height) : 0
     }
   }
   // A widget's own option (clock face, format…), with a default.
