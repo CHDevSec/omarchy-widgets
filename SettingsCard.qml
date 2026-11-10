@@ -102,6 +102,7 @@ Card {
     property string label
     property real value
     property real minimum: 0
+    property real maximum: 1
     signal picked(real v)
     width: parent.width
     spacing: Style.spacing.xs
@@ -130,7 +131,7 @@ Card {
       id: slider
       width: parent.width
       minimum: orow.minimum
-      maximum: 1
+      maximum: orow.maximum
       step: 0.05
       value: orow.value
       trackColor: Style.selectedFillFor(card.fg, Commons.Color.accent)
@@ -240,6 +241,14 @@ Card {
       foreground: card.fg
       onClicked: card.service.setStyle("clock", "seconds", !(card.service.option("clock", "seconds", false) === true))
     }
+  }
+
+  OpacityRow {
+    label: "Size"
+    minimum: 0.6
+    maximum: 2
+    value: card.targetLook.scale
+    onPicked: function(v) { card.service.setStyle(card.target, "scale", v) }
   }
 
   OpacityRow {

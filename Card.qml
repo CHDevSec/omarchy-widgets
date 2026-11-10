@@ -22,6 +22,16 @@ BorderSurface {
   readonly property var look: service.styleOf(widgetId)
   visible: !movable || shown
 
+  // Size: scaled from the top-left corner. While the corner handle is being
+  // dragged the live value wins; it is saved on release.
+  property real liveZoom: -1
+  readonly property real zoom: movable ? (liveZoom > 0 ? liveZoom : look.scale) : 1
+  scale: zoom
+  transformOrigin: Item.TopLeft
+  // The size it takes on screen, for placing, snapping and the input mask.
+  readonly property real vw: width * zoom
+  readonly property real vh: height * zoom
+
   default property alias content: body.data
   property int contentWidth: Style.space(260)
   // For children that need clicks of their own (note to-dos).
@@ -55,8 +65,8 @@ BorderSurface {
     var px = p ? p.x : defaultX
     var py = p ? p.y : defaultY
     // Keep it on screen if the resolution changed since it was saved.
-    x = Math.max(0, Math.min(px, (parent ? parent.width : px + width) - width))
-    y = Math.max(0, Math.min(py, (parent ? parent.height : py + height) - height))
+    x = Math.max(0, Math.min(px, (parent ? parent.width : px + vw) - vw))
+    y = Math.max(0, Math.min(py, (parent ? parent.height : py + vh) - vh))
   }
 
   Component.onCompleted: place()
@@ -82,8 +92,9 @@ BorderSurface {
     drag.threshold: 4
     drag.minimumX: 0
     drag.minimumY: 0
-    drag.maximumX: card.parent ? card.parent.width - card.width : 0
-    drag.maximumY: card.parent ? card.parent.height - card.height : 0
+    drag.maximumX: card.parent ? card.parent.width - card.vw : 0
+    drag.maximumY: card.parent ? card.parent.height - card.vh : 0
+    hoverEnabled: true
     onPressed: function(mouse) {
       if (mouse.button === Qt.RightButton && card.movable)
         card.service.openSettings(card.screenName, card.x + mouse.x, card.y + mouse.y, card.widgetId)
@@ -109,6 +120,60 @@ BorderSurface {
     NumberAnimation { id: snapX; target: card; property: "x"; duration: 120; easing.type: Easing.OutCubic }
     NumberAnimation { id: snapY; target: card; property: "y"; duration: 120; easing.type: Easing.OutCubic }
     onFinished: card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
+  }
+
+  // Resize: a corner grip, shown on hover when the widgets aren't locked.
+  // Dragging it scales the widget; the grid snaps the size to 5 % steps.
+  Item {
+    id: grip
+    z: 10
+    visible: card.movable && !card.service.locked && (dragArea.containsMouse || gripMouse.containsMouse || gripMouse.pressed)
+    width: Style.space(18)
+    height: width
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+
+    // Three steps of pixels, Omarchy-square.
+    Repeater {
+      model: [[2, 0], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]
+      Rectangle {
+        required property var modelData
+        readonly property real cell: grip.width / 4
+        x: cell * 0.5 + modelData[0] * cell
+        y: cell * 0.5 + modelData[1] * cell
+        width: cell * 0.7
+        height: width
+        color: gripMouse.containsMouse || gripMouse.pressed ? Commons.Color.accent : card.dim
+      }
+    }
+
+    MouseArea {
+      id: gripMouse
+      anchors.fill: parent
+      anchors.margins: -Style.space(4)
+      hoverEnabled: true
+      cursorShape: Qt.SizeFDiagCursor
+      property real startX: 0
+      property real startZoom: 1
+      onPressed: function(m) {
+        startX = mapToItem(card.parent, m.x, m.y).x
+        startZoom = card.zoom
+        card.liveZoom = card.zoom
+      }
+      onPositionChanged: function(m) {
+        if (!pressed) return
+        var dx = mapToItem(card.parent, m.x, m.y).x - startX
+        var z = startZoom * (card.width * startZoom + dx) / (card.width * startZoom)
+        card.liveZoom = Math.max(0.6, Math.min(2, Math.round(z * 20) / 20))
+      }
+      onReleased: {
+        var z = card.liveZoom
+        card.service.setStyle(card.widgetId, "scale", z)
+        card.liveZoom = -1
+        card.place()
+        card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
+      }
+    }
   }
 
   Column {

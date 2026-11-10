@@ -29,6 +29,7 @@ Item {
     { id: "calendar", name: "Calendar", description: "This month, today marked" },
     { id: "system", name: "System", description: "CPU, memory, disk and battery" },
     { id: "notes", name: "Notes", description: "Quick notes and to-dos, Claude's included" },
+    { id: "week", name: "Week", description: "This week's events and meetings, from Google Calendar" },
     { id: "trello", name: "Trello", description: "Cards that need you, kept up to date by Claude" },
     { id: "weather", name: "Weather", description: "Now and the next days, from wttr.in" },
     { id: "media", name: "Now Playing", description: "Whatever is playing, with controls" },
@@ -71,7 +72,9 @@ Item {
       background: st.background !== undefined ? Number(st.background)
         : prefs.backgroundOpacity !== undefined ? Number(prefs.backgroundOpacity) : 0.85,
       opacity: st.opacity !== undefined ? Number(st.opacity)
-        : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0
+        : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0,
+      // Size: the whole widget scaled, 0.6× to 2×.
+      scale: st.scale !== undefined ? Math.max(0.6, Math.min(2, Number(st.scale))) : 1.0
     }
   }
   // A widget's own option (clock face, format…), with a default.
@@ -206,6 +209,7 @@ Item {
       : Quickshell.env("HOME") + "/.local/share/omarchy-widgets/notes.md"
   }
   TrelloModel { id: trelloObj }
+  AgendaModel { id: agendaObj }
   WeatherModel { id: weatherObj; active: root.widgetOn("weather") }
   WorldClockModel { id: worldObj; active: root.widgetOn("worldclock") }
 
@@ -223,6 +227,7 @@ Item {
           stats: statsObj
           notes: notesObj
           trello: trelloObj
+          agenda: agendaObj
           weather: weatherObj
           world: worldObj
         }

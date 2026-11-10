@@ -14,6 +14,7 @@ PanelWindow {
   required property var stats
   required property var notes
   required property var trello
+  required property var agenda
   required property var weather
   required property var world
 
@@ -35,14 +36,15 @@ PanelWindow {
   }
 
   mask: Region {
-    Region { item: clock.visible ? clock : null }
-    Region { item: calendar.visible ? calendar : null }
-    Region { item: system.visible ? system : null }
-    Region { item: notesCard.visible ? notesCard : null }
-    Region { item: weatherCard.visible ? weatherCard : null }
-    Region { item: mediaCard.visible ? mediaCard : null }
-    Region { item: worldCard.visible ? worldCard : null }
-    Region { item: trelloCard.visible ? trelloCard : null }
+    Region { x: clock.x; y: clock.y; width: clock.visible ? clock.vw : 0; height: clock.visible ? clock.vh : 0 }
+    Region { x: calendar.x; y: calendar.y; width: calendar.visible ? calendar.vw : 0; height: calendar.visible ? calendar.vh : 0 }
+    Region { x: system.x; y: system.y; width: system.visible ? system.vw : 0; height: system.visible ? system.vh : 0 }
+    Region { x: notesCard.x; y: notesCard.y; width: notesCard.visible ? notesCard.vw : 0; height: notesCard.visible ? notesCard.vh : 0 }
+    Region { x: weatherCard.x; y: weatherCard.y; width: weatherCard.visible ? weatherCard.vw : 0; height: weatherCard.visible ? weatherCard.vh : 0 }
+    Region { x: mediaCard.x; y: mediaCard.y; width: mediaCard.visible ? mediaCard.vw : 0; height: mediaCard.visible ? mediaCard.vh : 0 }
+    Region { x: worldCard.x; y: worldCard.y; width: worldCard.visible ? worldCard.vw : 0; height: worldCard.visible ? worldCard.vh : 0 }
+    Region { x: weekCard.x; y: weekCard.y; width: weekCard.visible ? weekCard.vw : 0; height: weekCard.visible ? weekCard.vh : 0 }
+    Region { x: trelloCard.x; y: trelloCard.y; width: trelloCard.visible ? trelloCard.vw : 0; height: trelloCard.visible ? trelloCard.vh : 0 }
   }
 
   readonly property int edge: Style.space(28)
@@ -50,7 +52,7 @@ PanelWindow {
 
   function below(cards) {
     var y = edge
-    for (var i = 0; i < cards.length; i++) if (cards[i].shown) y += cards[i].height + gap
+    for (var i = 0; i < cards.length; i++) if (cards[i].shown) y += cards[i].vh + gap
     return y
   }
 
@@ -58,7 +60,7 @@ PanelWindow {
     id: desk
     anchors.fill: parent
 
-    readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard, trelloCard]
+    readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard, trelloCard, weekCard]
     // The card being dragged and where it would land; null when none.
     property var moving: null
     property var target: null
@@ -69,18 +71,18 @@ PanelWindow {
     function landing(c) {
       var g = win.service.gridSize, m = win.edge, W = width, H = height
       var near = Math.max(8, g * 0.5)
-      var xs = [{ v: m, line: m }, { v: W - c.width - m, line: W - m }]
-      var ys = [{ v: m, line: m }, { v: H - c.height - m, line: H - m }]
+      var xs = [{ v: m, line: m }, { v: W - c.vw - m, line: W - m }]
+      var ys = [{ v: m, line: m }, { v: H - c.vh - m, line: H - m }]
       for (var i = 0; i < cards.length; i++) {
         var o = cards[i]
         if (o === c || !o.visible) continue
-        xs.push({ v: o.x, line: o.x }, { v: o.x + o.width - c.width, line: o.x + o.width },
-                { v: o.x + (o.width - c.width) / 2, line: o.x + o.width / 2 },
-                { v: o.x + o.width + win.gap, line: o.x + o.width + win.gap },
-                { v: o.x - c.width - win.gap, line: o.x - win.gap })
-        ys.push({ v: o.y, line: o.y }, { v: o.y + o.height - c.height, line: o.y + o.height },
-                { v: o.y + o.height + win.gap, line: o.y + o.height + win.gap },
-                { v: o.y - c.height - win.gap, line: o.y - win.gap })
+        xs.push({ v: o.x, line: o.x }, { v: o.x + o.vw - c.vw, line: o.x + o.vw },
+                { v: o.x + (o.vw - c.vw) / 2, line: o.x + o.vw / 2 },
+                { v: o.x + o.vw + win.gap, line: o.x + o.vw + win.gap },
+                { v: o.x - c.vw - win.gap, line: o.x - win.gap })
+        ys.push({ v: o.y, line: o.y }, { v: o.y + o.vh - c.vh, line: o.y + o.vh },
+                { v: o.y + o.vh + win.gap, line: o.y + o.vh + win.gap },
+                { v: o.y - c.vh - win.gap, line: o.y - win.gap })
       }
       function pick(list, at) {
         var best = null
@@ -98,12 +100,12 @@ PanelWindow {
       }
       var gx = pick(xs, c.x), gy = pick(ys, c.y)
       return {
-        x: Math.round(Math.max(0, Math.min(gx ? gx.v : grid(c.x, c.width, W), W - c.width))),
-        y: Math.round(Math.max(0, Math.min(gy ? gy.v : grid(c.y, c.height, H), H - c.height))),
+        x: Math.round(Math.max(0, Math.min(gx ? gx.v : grid(c.x, c.vw, W), W - c.vw))),
+        y: Math.round(Math.max(0, Math.min(gy ? gy.v : grid(c.y, c.vh, H), H - c.vh))),
         lineX: gx ? gx.line : -1,
         lineY: gy ? gy.line : -1,
-        w: c.width,
-        h: c.height
+        w: c.vw,
+        h: c.vh
       }
     }
 
@@ -186,7 +188,7 @@ PanelWindow {
       id: clock
       service: win.service
       screenName: win.screenName
-      defaultX: desk.width - width - win.edge
+      defaultX: desk.width - vw - win.edge
       defaultY: win.edge
     }
 
@@ -194,7 +196,7 @@ PanelWindow {
       id: calendar
       service: win.service
       screenName: win.screenName
-      defaultX: desk.width - width - win.edge
+      defaultX: desk.width - vw - win.edge
       defaultY: win.below([clock])
     }
 
@@ -203,7 +205,7 @@ PanelWindow {
       service: win.service
       stats: win.stats
       screenName: win.screenName
-      defaultX: desk.width - width - win.edge
+      defaultX: desk.width - vw - win.edge
       defaultY: win.below([clock, calendar])
     }
 
@@ -238,7 +240,7 @@ PanelWindow {
       service: win.service
       world: win.world
       screenName: win.screenName
-      defaultX: desk.width - width - win.edge
+      defaultX: desk.width - vw - win.edge
       defaultY: win.below([clock, calendar, system])
     }
   
@@ -247,8 +249,18 @@ PanelWindow {
       service: win.service
       trello: win.trello
       screenName: win.screenName
-      defaultX: win.edge + notesCard.width + win.gap
+      defaultX: win.edge + notesCard.vw + win.gap
       defaultY: win.edge
+    }
+  
+    // Wide, along the bottom, centred.
+    WeekWidget {
+      id: weekCard
+      service: win.service
+      agenda: win.agenda
+      screenName: win.screenName
+      defaultX: Math.round((desk.width - vw) / 2)
+      defaultY: desk.height - vh - win.edge
     }
   }
 }
