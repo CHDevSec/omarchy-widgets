@@ -77,9 +77,31 @@ PanelWindow {
       var near = Math.max(8, g * 0.5)
       var xs = [{ v: m, line: m }, { v: W - c.vw - m, line: W - m }]
       var ys = [{ v: m, line: m }, { v: H - c.vh - m, line: H - m }]
-      for (var i = 0; i < cards.length; i++) {
-        var o = cards[i]
-        if (o === c || !o.visible) continue
+      var others = cards.filter(function(o) { return o !== c && o.visible })
+
+      // Margins other widgets keep from the screen's sides: offer the same
+      // margin on every side (the clock 40 px from the right edge → this one
+      // 40 px from the left), with the other widget's edge as a second guide.
+      function margin(list, mg, size, span, refLine) {
+        if (mg <= m + 1 || mg > span / 3) return
+        var label = "MARGEM " + Math.round(mg)
+        list.push({ v: mg, line: mg, ref: refLine, label: label },
+                  { v: span - size - mg, line: span - mg, ref: refLine, label: label })
+      }
+      // Gaps between two widgets side by side: offer the same gap again.
+      var gapsX = [], gapsY = []
+      for (var a = 0; a < others.length; a++) for (var b = 0; b < others.length; b++) {
+        var p = others[a], q = others[b]
+        if (p === q) continue
+        var overlapY = p.y < q.y + q.vh && q.y < p.y + p.vh
+        var overlapX = p.x < q.x + q.vw && q.x < p.x + p.vw
+        var gx0 = q.x - (p.x + p.vw), gy0 = q.y - (p.y + p.vh)
+        if (overlapY && gx0 > win.gap + 1 && gx0 < W / 4) gapsX.push(gx0)
+        if (overlapX && gy0 > win.gap + 1 && gy0 < H / 4) gapsY.push(gy0)
+      }
+
+      for (var i = 0; i < others.length; i++) {
+        var o = others[i]
         xs.push({ v: o.x, line: o.x }, { v: o.x + o.vw - c.vw, line: o.x + o.vw },
                 { v: o.x + (o.vw - c.vw) / 2, line: o.x + o.vw / 2 },
                 { v: o.x + o.vw + win.gap, line: o.x + o.vw + win.gap },
@@ -87,12 +109,24 @@ PanelWindow {
         ys.push({ v: o.y, line: o.y }, { v: o.y + o.vh - c.vh, line: o.y + o.vh },
                 { v: o.y + o.vh + win.gap, line: o.y + o.vh + win.gap },
                 { v: o.y - c.vh - win.gap, line: o.y - win.gap })
+        margin(xs, o.x, c.vw, W, o.x)
+        margin(xs, W - o.x - o.vw, c.vw, W, o.x + o.vw)
+        margin(ys, o.y, c.vh, H, o.y)
+        margin(ys, H - o.y - o.vh, c.vh, H, o.y + o.vh)
+        for (var k = 0; k < gapsX.length; k++)
+          xs.push({ v: o.x + o.vw + gapsX[k], line: o.x + o.vw + gapsX[k], label: "ESPAÇO " + Math.round(gapsX[k]) },
+                  { v: o.x - c.vw - gapsX[k], line: o.x - gapsX[k], label: "ESPAÇO " + Math.round(gapsX[k]) })
+        for (var k2 = 0; k2 < gapsY.length; k2++)
+          ys.push({ v: o.y + o.vh + gapsY[k2], line: o.y + o.vh + gapsY[k2], label: "ESPAÇO " + Math.round(gapsY[k2]) },
+                  { v: o.y - c.vh - gapsY[k2], line: o.y - gapsY[k2], label: "ESPAÇO " + Math.round(gapsY[k2]) })
       }
       function pick(list, at) {
         var best = null
         for (var j = 0; j < list.length; j++) {
           var d = Math.abs(list[j].v - at)
-          if (d <= near && (!best || d < best.d)) best = { v: list[j].v, line: list[j].line, d: d }
+          // Ties go to the labelled (margin / spacing) match.
+          if (d <= near && (!best || d < best.d || (d === best.d && list[j].label && !best.label)))
+            best = { v: list[j].v, line: list[j].line, ref: list[j].ref, label: list[j].label, d: d }
         }
         return best
       }
@@ -103,11 +137,17 @@ PanelWindow {
         return Math.max(m, Math.min(v, span - size - m))
       }
       var gx = pick(xs, c.x), gy = pick(ys, c.y)
+      var labels = []
+      if (gx && gx.label) labels.push("↔ " + gx.label)
+      if (gy && gy.label) labels.push("↕ " + gy.label)
       return {
         x: Math.round(Math.max(m, Math.min(gx ? gx.v : grid(c.x, c.vw, W), W - c.vw - m))),
         y: Math.round(Math.max(m, Math.min(gy ? gy.v : grid(c.y, c.vh, H), H - c.vh - m))),
         lineX: gx ? gx.line : -1,
         lineY: gy ? gy.line : -1,
+        refX: gx && gx.ref !== undefined ? gx.ref : -1,
+        refY: gy && gy.ref !== undefined ? gy.ref : -1,
+        label: labels.join("   "),
         w: c.vw,
         h: c.vh
       }
@@ -230,6 +270,21 @@ PanelWindow {
         width: 1
         height: parent.height
         color: guides.accent
+      }
+      // The other widget's edge it mirrors, fainter.
+      Rectangle {
+        visible: desk.target !== null && desk.target.refX !== undefined && desk.target.refX >= 0
+        x: desk.target && desk.target.refX !== undefined ? Math.round(desk.target.refX) : 0
+        width: 1
+        height: parent.height
+        color: Qt.rgba(guides.accent.r, guides.accent.g, guides.accent.b, 0.45)
+      }
+      Rectangle {
+        visible: desk.target !== null && desk.target.refY !== undefined && desk.target.refY >= 0
+        y: desk.target && desk.target.refY !== undefined ? Math.round(desk.target.refY) : 0
+        height: 1
+        width: parent.width
+        color: Qt.rgba(guides.accent.r, guides.accent.g, guides.accent.b, 0.45)
       }
       Rectangle {
         visible: desk.target !== null && desk.target.lineY >= 0
