@@ -142,15 +142,6 @@ Card {
     }
   }
 
-  Toggle {
-    width: parent.width
-    label: "Glass"
-    description: "Frosted, see-through: blurs what is behind this widget"
-    checked: card.targetLook.glass
-    foreground: card.fg
-    onClicked: card.service.setStyle(card.target, "glass", !card.targetLook.glass)
-  }
-
   OpacityRow {
     label: "Background"
     value: card.targetLook.background

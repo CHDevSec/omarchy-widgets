@@ -18,12 +18,9 @@ BorderSurface {
   property real defaultY: 0
   // The settings card is not a widget: it neither drags nor saves.
   property bool movable: true
-  // Which desktop layer this copy is on; it shows on the one matching the
-  // widget's own Glass setting.
-  property bool layerGlass: false
   readonly property bool shown: movable ? service.widgetOn(widgetId) : true
   readonly property var look: service.styleOf(widgetId)
-  visible: !movable || (shown && look.glass === layerGlass)
+  visible: !movable || shown
 
   default property alias content: body.data
   property int contentWidth: Style.space(260)

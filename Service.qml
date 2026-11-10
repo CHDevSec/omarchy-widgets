@@ -39,17 +39,13 @@ Item {
   readonly property bool locked: prefs.locked === true
 
   // Each widget's own look, never a global one:
-  //   glass       blurred, see-through card (Hyprland blurs what is behind)
   //   background  card background opacity
   //   opacity     the whole widget's opacity
   function styleOf(id) {
     var st = prefs.style && prefs.style[id] ? prefs.style[id] : {}
     return {
-      glass: st.glass === true,
-      // Unset: see-through for glass (a near-solid card would hide the
-      // blur), else the old shared value from 0.3, else 0.85.
+      // Unset: the old shared value from 0.3, else 0.85.
       background: st.background !== undefined ? Number(st.background)
-        : st.glass === true ? 0.45
         : prefs.backgroundOpacity !== undefined ? Number(prefs.backgroundOpacity) : 0.85,
       opacity: st.opacity !== undefined ? Number(st.opacity)
         : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0
@@ -154,8 +150,6 @@ Item {
     function lock(): void { root.setLocked(true) }
     function unlock(): void { root.setLocked(false) }
     function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
-    // `glass weather on|off`
-    function glass(id: string, on: string): void { root.setStyle(id, "glass", on === "on" || on === "true") }
     function note(): void {
       var t = root.targetScreens
       root.openNoteInput(t.length > 0 ? t[0].name : "", -1, -1)
@@ -177,21 +171,8 @@ Item {
         id: perScreen
         required property var modelData
 
-        // Two desktop layers: plain cards, and Glass cards, which Hyprland
-        // blurs behind (layer rule in ~/.config/hypr/omarchy-widgets.lua).
-        // Each widget sits on the one its own Glass setting picks.
         WidgetsWindow {
           screen: perScreen.modelData
-          glass: false
-          service: root
-          stats: statsObj
-          notes: notesObj
-          weather: weatherObj
-          world: worldObj
-        }
-        WidgetsWindow {
-          screen: perScreen.modelData
-          glass: true
           service: root
           stats: statsObj
           notes: notesObj

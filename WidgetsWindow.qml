@@ -10,8 +10,6 @@ PanelWindow {
   id: win
 
   required property var service
-  // The Glass layer, which Hyprland blurs behind, or the plain one.
-  property bool glass: false
   required property var stats
   required property var notes
   required property var weather
@@ -20,7 +18,7 @@ PanelWindow {
   readonly property string screenName: screen ? screen.name : ""
 
   color: "transparent"
-  WlrLayershell.namespace: glass ? "omarchy-widgets-glass" : "omarchy-widgets"
+  WlrLayershell.namespace: "omarchy-widgets"
   WlrLayershell.layer: WlrLayer.Bottom
   WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
   // Inside the area the bar and dock leave free.
@@ -62,7 +60,6 @@ PanelWindow {
     ClockWidget {
       id: clock
       service: win.service
-      layerGlass: win.glass
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.edge
@@ -71,7 +68,6 @@ PanelWindow {
     CalendarWidget {
       id: calendar
       service: win.service
-      layerGlass: win.glass
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.below([clock])
@@ -80,7 +76,6 @@ PanelWindow {
     SystemWidget {
       id: system
       service: win.service
-      layerGlass: win.glass
       stats: win.stats
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
@@ -90,7 +85,6 @@ PanelWindow {
     NotesWidget {
       id: notesCard
       service: win.service
-      layerGlass: win.glass
       notes: win.notes
       screenName: win.screenName
       defaultX: win.edge
@@ -100,7 +94,6 @@ PanelWindow {
     WeatherWidget {
       id: weatherCard
       service: win.service
-      layerGlass: win.glass
       weather: win.weather
       screenName: win.screenName
       defaultX: win.edge
@@ -110,7 +103,6 @@ PanelWindow {
     MediaWidget {
       id: mediaCard
       service: win.service
-      layerGlass: win.glass
       screenName: win.screenName
       defaultX: win.edge
       defaultY: win.below([notesCard, weatherCard])
@@ -119,7 +111,6 @@ PanelWindow {
     WorldClockWidget {
       id: worldCard
       service: win.service
-      layerGlass: win.glass
       world: win.world
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
