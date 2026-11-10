@@ -27,7 +27,13 @@ BorderSurface {
   readonly property color fg: Commons.Color.popups.text
   readonly property color dim: Qt.darker(fg, 1.4)
 
-  color: Commons.Color.popups.background
+  // The theme's popup background at the opacity chosen in Settings; the
+  // settings and note cards stay solid so they are always readable.
+  readonly property color baseBackground: Commons.Color.popups.background
+  color: movable
+    ? Qt.rgba(baseBackground.r, baseBackground.g, baseBackground.b, baseBackground.a * service.backgroundOpacity)
+    : baseBackground
+  opacity: movable ? service.widgetOpacity : 1
   borderSpec: Border.localOrSurfaceSpec("popups", "border", Commons.Color.popups.border,
     Commons.Color.popups.border, Math.max(1, Style.space(2)))
   radius: Style.cornerRadius
@@ -87,17 +93,5 @@ BorderSurface {
     y: card.contentTopInset
     width: card.contentWidth
     spacing: Style.spacing.rowGap
-  }
-
-  // A small lock mark while widgets are locked.
-  Text {
-    visible: card.movable && card.service.locked
-    anchors.top: parent.top
-    anchors.right: parent.right
-    anchors.margins: card.padding
-    text: "󰌾"
-    color: card.dim
-    font.family: Style.font.family
-    font.pixelSize: Style.font.caption
   }
 }

@@ -12,6 +12,8 @@ PanelWindow {
   required property var service
   required property var stats
   required property var notes
+  required property var weather
+  required property var world
 
   readonly property string screenName: screen ? screen.name : ""
 
@@ -35,6 +37,9 @@ PanelWindow {
     Region { item: calendar.visible ? calendar : null }
     Region { item: system.visible ? system : null }
     Region { item: notesCard.visible ? notesCard : null }
+    Region { item: weatherCard.visible ? weatherCard : null }
+    Region { item: mediaCard.visible ? mediaCard : null }
+    Region { item: worldCard.visible ? worldCard : null }
   }
 
   readonly property int edge: Style.space(28)
@@ -88,6 +93,35 @@ PanelWindow {
       screenName: win.screenName
       defaultX: win.edge
       defaultY: win.edge
+    }
+
+    WeatherWidget {
+      id: weatherCard
+      visible: win.service.widgetOn("weather")
+      service: win.service
+      weather: win.weather
+      screenName: win.screenName
+      defaultX: win.edge
+      defaultY: win.below([notesCard])
+    }
+
+    MediaWidget {
+      id: mediaCard
+      visible: win.service.widgetOn("media")
+      service: win.service
+      screenName: win.screenName
+      defaultX: win.edge
+      defaultY: win.below([notesCard, weatherCard])
+    }
+
+    WorldClockWidget {
+      id: worldCard
+      visible: win.service.widgetOn("worldclock")
+      service: win.service
+      world: win.world
+      screenName: win.screenName
+      defaultX: desk.width - width - win.edge
+      defaultY: win.below([clock, calendar, system])
     }
   }
 }

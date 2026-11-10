@@ -43,6 +43,23 @@ QtObject {
     file.setText(lines.join("\n"))
   }
 
+  function add(text, todo) {
+    var t = String(text || "").replace(/\s*\n\s*/g, " ").trim()
+    if (t === "") return
+    var lines = root._lines.slice()
+    // Drop the trailing empty line so the file keeps one final newline.
+    while (lines.length && lines[lines.length - 1] === "") lines.pop()
+    lines.push((todo ? "- [ ] " : "- ") + t)
+    file.setText(lines.join("\n") + "\n")
+  }
+
+  function remove(item) {
+    if (!item) return
+    var lines = root._lines.slice()
+    lines.splice(item.line, 1)
+    file.setText(lines.join("\n"))
+  }
+
   function clearDone() {
     var lines = root._lines.filter(function(l) { return !/^\s*[-*]\s+\[(x|X)\]\s+/.test(l) })
     file.setText(lines.join("\n"))

@@ -26,7 +26,10 @@ Item {
     { id: "clock", name: "Clock", description: "The time, large, with the date" },
     { id: "calendar", name: "Calendar", description: "This month, today marked" },
     { id: "system", name: "System", description: "CPU, memory, disk and battery" },
-    { id: "notes", name: "Notes", description: "Quick notes and to-dos, Claude's included" }
+    { id: "notes", name: "Notes", description: "Quick notes and to-dos, Claude's included" },
+    { id: "weather", name: "Weather", description: "Now and the next days, from wttr.in" },
+    { id: "media", name: "Now Playing", description: "Whatever is playing, with controls" },
+    { id: "worldclock", name: "World Clock", description: "The cities from the bar's Elsewhen" }
   ]
 
   // ------------------------------------------------------------- settings
@@ -34,6 +37,9 @@ Item {
 
   readonly property string monitor: String(prefs.monitor || "all")
   readonly property bool locked: prefs.locked === true
+  // Card background opacity, and the whole widget's.
+  readonly property real backgroundOpacity: prefs.backgroundOpacity === undefined ? 0.85 : Number(prefs.backgroundOpacity)
+  readonly property real widgetOpacity: prefs.widgetOpacity === undefined ? 1.0 : Number(prefs.widgetOpacity)
   readonly property var targetScreens: {
     var all = Quickshell.screens
     if (root.monitor === "all") return all
@@ -58,6 +64,8 @@ Item {
   function setWidget(id, on) {
     update(function(p) { if (!p.widgets) p.widgets = {}; p.widgets[id] = !!on })
   }
+  function setBackgroundOpacity(v) { update(function(p) { p.backgroundOpacity = Math.round(v * 100) / 100 }) }
+  function setWidgetOpacity(v) { update(function(p) { p.widgetOpacity = Math.round(v * 100) / 100 }) }
   function resetPositions() { update(function(p) { delete p.screens }) }
 
   function positionFor(screenName, widgetId) {
@@ -73,15 +81,19 @@ Item {
     })
   }
 
-  // Which screen shows the settings card, and where (-1 = centred);
-  // "" = closed.
-  property string settingsScreen: ""
-  property point settingsAt: Qt.point(-1, -1)
-  function openSettings(screenName, x, y) {
-    settingsAt = Qt.point(x, y)
-    settingsScreen = screenName
+  // The card floating over windows: "settings" or "note" (add a note), on
+  // which screen and where (-1 = centred). "" = closed.
+  property string overlayKind: ""
+  property string overlayScreen: ""
+  property point overlayAt: Qt.point(-1, -1)
+  function openOverlay(kind, screenName, x, y) {
+    overlayAt = Qt.point(x, y)
+    overlayScreen = screenName
+    overlayKind = kind
   }
-  function closeSettings() { settingsScreen = "" }
+  function openSettings(screenName, x, y) { openOverlay("settings", screenName, x, y) }
+  function openNoteInput(screenName, x, y) { openOverlay("note", screenName, x, y) }
+  function closeSettings() { overlayKind = "" }
 
   readonly property string stateDir: Quickshell.env("HOME") + "/.local/state/omarchy-widgets"
 
@@ -117,12 +129,18 @@ Item {
     function lock(): void { root.setLocked(true) }
     function unlock(): void { root.setLocked(false) }
     function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
+    function note(): void {
+      var t = root.targetScreens
+      root.openNoteInput(t.length > 0 ? t[0].name : "", -1, -1)
+    }
   }
 
   // ---------------------------------------------------------------- data
   // Shared by every screen's cards.
   SystemStats { id: statsObj }
   NotesModel { id: notesObj }
+  WeatherModel { id: weatherObj; active: root.widgetOn("weather") }
+  WorldClockModel { id: worldObj; active: root.widgetOn("worldclock") }
 
   Variants {
     model: root.targetScreens
@@ -137,12 +155,15 @@ Item {
           service: root
           stats: statsObj
           notes: notesObj
+          weather: weatherObj
+          world: worldObj
         }
 
         // Settings float over windows, so they can be opened from anywhere.
-        SettingsWindow {
+        CardOverlayWindow {
           screen: perScreen.modelData
           service: root
+          notes: notesObj
         }
       }
     }
