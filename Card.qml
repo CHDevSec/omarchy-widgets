@@ -41,6 +41,8 @@ BorderSurface {
   readonly property real stretchHeight: liveHeight > 0 ? liveHeight : (movable ? look.height : 0)
   readonly property int contentWidth: stretchWidth > 0
     ? Math.round(Math.max(defaultWidth * 0.6, stretchWidth)) : defaultWidth
+  // Content stretched taller than it is sits in the middle (the clock).
+  property bool centerContent: false
   // The height the content should fill when stretched (0 = its own).
   readonly property real contentHeight: Math.max(body.implicitHeight, stretchHeight)
   // For children that need clicks of their own (note to-dos).
@@ -203,17 +205,14 @@ BorderSurface {
         card.place()
         card.service.savePosition(card.screenName, card.widgetId, card.x, card.y)
       }
-      onDoubleClicked: {
-        card.service.setStyle(card.widgetId, "width", 0)
-        card.service.setStyle(card.widgetId, "height", 0)
-      }
+      onDoubleClicked: card.service.resetSize(card.widgetId)
     }
   }
 
   Column {
     id: body
     x: card.contentLeftInset
-    y: card.contentTopInset
+    y: card.contentTopInset + (card.centerContent ? Math.round((card.contentHeight - implicitHeight) / 2) : 0)
     width: card.contentWidth
     spacing: Style.spacing.rowGap
   }

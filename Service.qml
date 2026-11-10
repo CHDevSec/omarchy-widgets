@@ -74,7 +74,7 @@ Item {
       opacity: st.opacity !== undefined ? Number(st.opacity)
         : prefs.widgetOpacity !== undefined ? Number(prefs.widgetOpacity) : 1.0,
       // Size: the whole widget scaled, 0.6× to 2×.
-      scale: st.scale !== undefined ? Math.max(0.6, Math.min(2, Number(st.scale))) : 1.0,
+      scale: Number(st.scale) > 0 ? Math.max(0.6, Math.min(2, Number(st.scale))) : 1.0,
       // Stretch: the content's width and height in px; 0 = its natural size.
       width: Number(st.width) > 0 ? Number(st.width) : 0,
       height: Number(st.height) > 0 ? Number(st.height) : 0
@@ -116,6 +116,12 @@ Item {
   function setLocked(on) { update(function(p) { p.locked = !!on }) }
   function setSnap(on) { update(function(p) { p.snap = !!on }) }
   function setGridSize(n) { update(function(p) { p.gridSize = n }) }
+  // Back to the natural size: no stretch, no scale.
+  function resetSize(id) {
+    update(function(p) {
+      if (p.style && p.style[id]) { delete p.style[id].width; delete p.style[id].height; delete p.style[id].scale }
+    })
+  }
   function setWidget(id, on) {
     update(function(p) { if (!p.widgets) p.widgets = {}; p.widgets[id] = !!on })
   }
@@ -186,6 +192,7 @@ Item {
     function close(): void { root.closeSettings() }
     function lock(): void { root.setLocked(true) }
     function unlock(): void { root.setLocked(false) }
+    function resetsize(id: string): void { root.resetSize(id) }
     function toggle(id: string): void { root.setWidget(id, !root.widgetOn(id)) }
     // `set clock face pixel`, `set clock seconds true`
     function set(id: string, key: string, value: string): void {

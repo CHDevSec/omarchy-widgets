@@ -12,6 +12,7 @@ import qs.Ui
 Card {
   id: card
   widgetId: "clock"
+  centerContent: true
 
   readonly property string face: service.option("clock", "face", "theme")
   readonly property string format: service.option("clock", "format", "24h")
@@ -43,7 +44,9 @@ Card {
   }
   readonly property color pixelShadow: Qt.rgba(accent.r, accent.g, accent.b, 0.3)
 
-  readonly property real bigSize: Math.round(Style.font.displayLarge * (seconds ? 1.7 : 2.2))
+  // Grows when the card is stretched wider; Text shrinks it to fit if needed.
+  readonly property real growth: Math.max(1, contentWidth / defaultWidth)
+  readonly property real bigSize: Math.round(Style.font.displayLarge * (seconds ? 1.7 : 2.2) * growth)
 
   // ------------------------------------------------------------- digital
   Item {
@@ -57,6 +60,9 @@ Card {
       visible: card.face !== "pixel"
       Text {
         id: textLine
+        width: Math.min(implicitWidth, card.contentWidth - (card.twelve ? ampmText.implicitWidth + Style.spacing.md : 0))
+        fontSizeMode: Text.HorizontalFit
+        minimumPixelSize: 10
         text: card.line
         color: card.fg
         font.family: card.family
@@ -65,6 +71,7 @@ Card {
         textFormat: Text.PlainText
       }
       Text {
+        id: ampmText
         visible: card.twelve
         anchors.baseline: textLine.baseline
         text: card.ampm
@@ -80,7 +87,7 @@ Card {
       visible: card.face === "pixel"
       anchors.horizontalCenter: parent.horizontalCenter
       text: card.line + (card.twelve ? " " + card.ampm : "")
-      dot: card.pixelDot(columns + 1, 10)
+      dot: card.pixelDot(columns + 1, 24)
       color: card.fg
       markColor: card.accent
       marks: ":AMP"
@@ -108,7 +115,10 @@ Card {
           text: modelData
           color: index === 0 ? card.fg : card.accent
           font.family: card.family
-          font.pixelSize: Math.round(Style.font.displayLarge * 2.8)
+          width: Math.min(implicitWidth, card.contentWidth)
+          fontSizeMode: Text.HorizontalFit
+          minimumPixelSize: 10
+          font.pixelSize: Math.round(Style.font.displayLarge * 2.8 * card.growth)
           font.bold: true
         }
         PixelText {
@@ -116,7 +126,7 @@ Card {
           visible: card.face === "pixel"
           anchors.horizontalCenter: parent.horizontalCenter
           text: modelData
-          dot: card.pixelDot(columns + 1, 13)
+          dot: card.pixelDot(columns + 1, 30)
           color: index === 0 ? card.fg : card.accent
           shadowColor: card.pixelShadow
         }
@@ -128,7 +138,7 @@ Card {
   Item {
     visible: card.format === "analog"
     width: parent.width
-    height: Style.space(150)
+    height: Math.min(card.contentWidth, Math.round(Style.space(150) * card.growth))
 
     Canvas {
       id: dial
@@ -174,6 +184,7 @@ Card {
         function onNowChanged() { if (card.format === "analog") dial.requestPaint() }
         function onFgChanged() { dial.requestPaint() }
         function onSecondsChanged() { dial.requestPaint() }
+        function onGrowthChanged() { dial.requestPaint() }
       }
     }
   }
@@ -190,7 +201,7 @@ Card {
       id: pixelDay
       anchors.horizontalCenter: parent.horizontalCenter
       text: card.weekday
-      dot: 3
+      dot: Math.max(1, Math.min(3, Math.floor(card.contentWidth / Math.max(1, columns))))
       color: card.accent
     }
     PixelText {
@@ -198,7 +209,7 @@ Card {
       anchors.horizontalCenter: parent.horizontalCenter
       y: pixelDay.height + Style.spacing.sm
       text: card.dateLine
-      dot: 2
+      dot: Math.max(1, Math.min(2, Math.floor(card.contentWidth / Math.max(1, columns))))
       color: card.dim
     }
   }

@@ -243,6 +243,14 @@ Card {
     }
   }
 
+  Choice {
+    visible: card.targetLook.scale !== 1 || card.targetLook.width > 0 || card.targetLook.height > 0
+    text: "Reset size"
+    iconText: "󰑓"
+    fontSize: Style.font.caption
+    onClicked: card.service.resetSize(card.target)
+  }
+
   OpacityRow {
     label: "Size"
     minimum: 0.6
