@@ -1,11 +1,12 @@
 import QtQuick
+import Quickshell
 import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 
 // Trello: what needs you, grouped the way you work — doing, waiting for
 // your review, and the P0s still in the queue. Each board keeps one theme
-// colour; click a card to open it in the browser.
+// colour; click a card to open it in the Trello web app.
 Card {
   id: card
   widgetId: "trello"
@@ -28,6 +29,10 @@ Card {
     var h = 0
     for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997
     return boardPalette[h % boardPalette.length]
+  }
+  // Cards open in the Trello web app (Omarchy's app window), not a browser tab.
+  function open(url) {
+    Quickshell.execDetached(["omarchy-launch-webapp", url])
   }
   function ago(d) {
     var m = Math.max(0, Math.round((now - d) / 60000))
@@ -177,7 +182,7 @@ Card {
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: Qt.openUrlExternally(row.modelData.url)
+            onClicked: card.open(row.modelData.url)
           }
         }
       }
