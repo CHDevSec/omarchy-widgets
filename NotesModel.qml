@@ -14,8 +14,12 @@ import Quickshell.Io
 QtObject {
   id: root
 
-  readonly property string dir: Quickshell.env("HOME") + "/.local/share/omarchy-widgets"
-  readonly property string path: dir + "/notes.md"
+  // Set by the service: the widget's own file, or a note in the Obsidian
+  // vault (same Markdown check boxes, so both apps edit the same list).
+  property string path: Quickshell.env("HOME") + "/.local/share/omarchy-widgets/notes.md"
+  readonly property string dir: path.substring(0, path.lastIndexOf("/"))
+  readonly property bool inVault: path.indexOf("/docs-obsidian/") >= 0
+  onPathChanged: { mkdir.running = false; mkdir.running = true }
 
   // [{ line, text, todo, done }]
   property var items: []
@@ -66,7 +70,8 @@ QtObject {
   }
 
   property Process mkdir: Process {
-    command: ["sh", "-c", "mkdir -p \"$1\" && [ -e \"$2\" ] || printf '%s\\n' '- [ ] Right-click a widget for settings' > \"$2\"", "sh", root.dir, root.path]
+    command: ["sh", "-c", "mkdir -p \"$1\" && [ -e \"$2\" ] || printf '%s\\n' \"$3\" > \"$2\"", "sh", root.dir, root.path,
+      root.inVault ? "# Notas rápidas\n\n- [ ] Primeira nota rápida" : "- [ ] Right-click a widget for settings"]
     running: true
     onExited: file.reload()
   }

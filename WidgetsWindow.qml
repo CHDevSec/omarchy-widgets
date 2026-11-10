@@ -13,6 +13,7 @@ PanelWindow {
   required property var service
   required property var stats
   required property var notes
+  required property var trello
   required property var weather
   required property var world
 
@@ -41,6 +42,7 @@ PanelWindow {
     Region { item: weatherCard.visible ? weatherCard : null }
     Region { item: mediaCard.visible ? mediaCard : null }
     Region { item: worldCard.visible ? worldCard : null }
+    Region { item: trelloCard.visible ? trelloCard : null }
   }
 
   readonly property int edge: Style.space(28)
@@ -56,7 +58,7 @@ PanelWindow {
     id: desk
     anchors.fill: parent
 
-    readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard]
+    readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard, trelloCard]
     // The card being dragged and where it would land; null when none.
     property var moving: null
     property var target: null
@@ -238,6 +240,15 @@ PanelWindow {
       screenName: win.screenName
       defaultX: desk.width - width - win.edge
       defaultY: win.below([clock, calendar, system])
+    }
+  
+    TrelloWidget {
+      id: trelloCard
+      service: win.service
+      trello: win.trello
+      screenName: win.screenName
+      defaultX: win.edge + notesCard.width + win.gap
+      defaultY: win.edge
     }
   }
 }

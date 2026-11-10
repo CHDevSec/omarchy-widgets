@@ -29,6 +29,7 @@ Item {
     { id: "calendar", name: "Calendar", description: "This month, today marked" },
     { id: "system", name: "System", description: "CPU, memory, disk and battery" },
     { id: "notes", name: "Notes", description: "Quick notes and to-dos, Claude's included" },
+    { id: "trello", name: "Trello", description: "Cards that need you, kept up to date by Claude" },
     { id: "weather", name: "Weather", description: "Now and the next days, from wttr.in" },
     { id: "media", name: "Now Playing", description: "Whatever is playing, with controls" },
     { id: "worldclock", name: "World Clock", description: "The cities from the bar's Elsewhen" }
@@ -197,7 +198,14 @@ Item {
   ThemeColors { id: paletteObj }
 
   SystemStats { id: statsObj }
-  NotesModel { id: notesObj }
+  // Notes live in the widget's own file, or in the Obsidian vault.
+  readonly property string vaultNotes: Quickshell.env("HOME") + "/Documents/docs-obsidian/Docs/Notas Rápidas.md"
+  NotesModel {
+    id: notesObj
+    path: root.option("notes", "source", "local") === "obsidian" ? root.vaultNotes
+      : Quickshell.env("HOME") + "/.local/share/omarchy-widgets/notes.md"
+  }
+  TrelloModel { id: trelloObj }
   WeatherModel { id: weatherObj; active: root.widgetOn("weather") }
   WorldClockModel { id: worldObj; active: root.widgetOn("worldclock") }
 
@@ -214,6 +222,7 @@ Item {
           service: root
           stats: statsObj
           notes: notesObj
+          trello: trelloObj
           weather: weatherObj
           world: worldObj
         }

@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Write the Trello snapshot the Omarchy Widgets Trello card shows.
+
+Claude runs this with the card searches it made through its Trello
+connector (JSON files shaped {cards: {nodes: [...]}}):
+
+    omarchy-widgets-trello search1.json [search2.json ...]
+
+Cards are sorted into what needs you:
+  doing   lists named Hands-on / Doing / Fazendo / Em andamento
+  review  lists named Review / Code Review / Testes / Revisão
+  queue   P0 or CRÍTICO cards still in Backlog / Pesquisa / To do
+New cards in any section raise a desktop notification.
+"""
+import json, os, re, subprocess, sys
+from datetime import datetime, timezone
+
+DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "omarchy-widgets")
+OUT = os.path.join(DATA, "trello.json")
+
+SECTIONS = [
+    ("doing", "FAZENDO", re.compile(r"hands-on|doing|fazendo|andamento|in progress", re.I)),
+    ("review", "REVISAR", re.compile(r"review|revis|teste", re.I)),
+    ("queue", "P0 NA FILA", re.compile(r"backlog|pesquisa|to ?do|a fazer", re.I)),
+]
+URGENT = re.compile(r"\bP0\b|CR[IÍ]TICO", re.I)
+
+
+def clean(name):
+    """'🔴 [P0/S1] 🔧 BACK · 🔒 SEC | 🔬 Engenharia…' -> ('P0', 'Engenharia…')."""
+    prio = ""
+    m = re.search(r"\[(P\d)(?:/S\d)?\]", name)
+    if m:
+        prio = m.group(1)
+    elif re.search(r"CR[IÍ]TICO", name, re.I):
+        prio = "P0"
+    if "|" in name:
+        name = name.split("|", 1)[1]
+    name = re.sub(r"[\U0001F000-\U0001FAFF☀-➿️]", "", name)
+    name = re.sub(r"^\s*(CR[IÍ]TICO\s*[—-]\s*)?", "", name, flags=re.I)
+    return prio, re.sub(r"\s+", " ", name).strip()
+
+
+def main(paths):
+    seen, sections = set(), {sid: [] for sid, _, _ in SECTIONS}
+    for path in paths:
+        with open(path) as f:
+            nodes = json.load(f).get("cards", {}).get("nodes", [])
+        for c in nodes:
+            url = c.get("url") or ""
+            if url in seen or c.get("closed") or c.get("dueComplete"):
+                continue
+            seen.add(url)
+            lst = (c.get("list") or {}).get("name") or ""
+            raw = c.get("name") or ""
+            prio, name = clean(raw)
+            for sid, _, pat in SECTIONS:
+                if pat.search(lst) and (sid != "queue" or URGENT.search(raw)):
+                    sections[sid].append({
+                        "name": name, "prio": prio, "url": url,
+                        "board": (c.get("board") or {}).get("name") or "",
+                        "list": re.sub(r"^[\W_]+", "", lst).strip(),
+                        "activity": c.get("lastActivityAt") or "",
+                    })
+                    break
+    for items in sections.values():
+        # Highest priority first; within it, most recently touched first.
+        items.sort(key=lambda i: i["activity"], reverse=True)
+        items.sort(key=lambda i: i["prio"] or "P9")
+
+    old = set()
+    try:
+        with open(OUT) as f:
+            for s in json.load(f).get("sections", []):
+                old.update(i["url"] for i in s.get("items", []))
+    except (OSError, ValueError):
+        old = None  # first run: no notifications
+
+    snap = {
+        "updated": datetime.now(timezone.utc).isoformat(),
+        "sections": [{"id": sid, "title": title, "items": sections[sid]} for sid, title, _ in SECTIONS],
+    }
+    os.makedirs(DATA, exist_ok=True)
+    tmp = OUT + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(snap, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, OUT)
+
+    if old is not None:
+        for sid, title, _ in SECTIONS:
+            for i in sections[sid]:
+                if i["url"] not in old:
+                    subprocess.run(["notify-send", "-a", "Trello", f"Trello · {title}",
+                                    f"{i['name']}\n{i['board']}"], check=False)
+    total = sum(len(v) for v in sections.values())
+    print(f"{OUT}: {total} cards ({', '.join(f'{k} {len(v)}' for k, v in sections.items())})")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    main(sys.argv[1:])

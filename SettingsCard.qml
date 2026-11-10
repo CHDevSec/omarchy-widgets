@@ -168,6 +168,28 @@ Card {
     }
   }
 
+  // Where the notes live.
+  Column {
+    visible: card.target === "notes"
+    width: parent.width
+    spacing: Style.spacing.rowGap
+    PanelSectionHeader { text: "SOURCE"; foreground: card.fg }
+    Flow {
+      width: parent.width
+      spacing: Style.spacing.md
+      Repeater {
+        model: [{ id: "local", name: "Widget" }, { id: "obsidian", name: "Obsidian · Notas Rápidas" }]
+        Choice {
+          required property var modelData
+          text: modelData.name
+          fontSize: Style.font.caption
+          selected: card.service.option("notes", "source", "local") === modelData.id
+          onClicked: card.service.setStyle("notes", "source", modelData.id)
+        }
+      }
+    }
+  }
+
   // The clock's own options.
   Column {
     visible: card.target === "clock"

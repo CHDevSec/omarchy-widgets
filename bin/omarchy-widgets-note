@@ -1,13 +1,19 @@
 #!/bin/sh
-# Add a note to the Omarchy Widgets Notes card.
+# Add a note to the Omarchy Widgets Notes card (its own file, or the
+# Obsidian "Notas Rápidas.md" when the card is set to Obsidian).
 #   omarchy-widgets-note "text"          a to-do
 #   omarchy-widgets-note --note "text"   a plain note
 set -eu
 dir="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-widgets"
-mkdir -p "$dir"
+file="$dir/notes.md"
+settings="$HOME/.local/state/omarchy-widgets/settings.json"
+if [ -r "$settings" ] && [ "$(jq -r '.style.notes.source // "local"' "$settings" 2>/dev/null)" = obsidian ]; then
+  file="$HOME/Documents/docs-obsidian/Docs/Notas Rápidas.md"
+fi
+mkdir -p "$(dirname "$file")"
 mark="- [ ] "
 if [ "${1:-}" = "--note" ]; then mark="- "; shift; fi
 [ $# -gt 0 ] || { echo "usage: omarchy-widgets-note [--note] text" >&2; exit 2; }
 # One line per note: newlines in the text would split it.
 text=$(printf '%s' "$*" | tr '\n' ' ')
-printf '%s%s\n' "$mark" "$text" >> "$dir/notes.md"
+printf '%s%s\n' "$mark" "$text" >> "$file"
