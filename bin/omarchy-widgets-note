@@ -1,6 +1,6 @@
 #!/bin/sh
 # Add a note to the Omarchy Widgets Notes card (its own file, or the
-# Obsidian "Notas Rápidas.md" when the card is set to Obsidian).
+# Obsidian note set as style.notes.vaultFile when the card uses Obsidian).
 #   omarchy-widgets-note "text"          a to-do
 #   omarchy-widgets-note --note "text"   a plain note
 set -eu
@@ -8,7 +8,9 @@ dir="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy-widgets"
 file="$dir/notes.md"
 settings="$HOME/.local/state/omarchy-widgets/settings.json"
 if [ -r "$settings" ] && [ "$(jq -r '.style.notes.source // "local"' "$settings" 2>/dev/null)" = obsidian ]; then
-  file="$HOME/Documents/docs-obsidian/Docs/Notas Rápidas.md"
+  vault=$(jq -r '.style.notes.vaultFile // ""' "$settings" 2>/dev/null)
+  case "$vault" in "~/"*) vault="$HOME/${vault#\~/}" ;; esac
+  [ -n "$vault" ] && file="$vault"
 fi
 mkdir -p "$(dirname "$file")"
 mark="- [ ] "

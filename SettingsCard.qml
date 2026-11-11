@@ -171,7 +171,7 @@ Card {
 
   // Where the notes live.
   Column {
-    visible: card.target === "notes"
+    visible: card.target === "notes" && card.service.vaultNotes !== ""
     width: parent.width
     spacing: Style.spacing.rowGap
     PanelSectionHeader { text: "SOURCE"; foreground: card.fg }
@@ -179,7 +179,8 @@ Card {
       width: parent.width
       spacing: Style.spacing.md
       Repeater {
-        model: [{ id: "local", name: "Widget" }, { id: "obsidian", name: "Obsidian · Notas Rápidas" }]
+        model: [{ id: "local", name: "Widget" }, { id: "obsidian", name: "Obsidian · "
+          + card.service.vaultNotes.substring(card.service.vaultNotes.lastIndexOf("/") + 1).replace(/\.md$/, "") }]
         Choice {
           required property var modelData
           text: modelData.name

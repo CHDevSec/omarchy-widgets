@@ -211,12 +211,20 @@ Item {
   ThemeColors { id: paletteObj }
 
   SystemStats { id: statsObj }
-  // Notes live in the widget's own file, or in the Obsidian vault.
-  readonly property string vaultNotes: Quickshell.env("HOME") + "/Documents/docs-obsidian/Docs/Notas Rápidas.md"
+  // Notes live in the widget's own file, or in a note of an Obsidian vault:
+  // style.notes.vaultFile in settings.json, a path ("~/" allowed), e.g.
+  //   omarchy-shell omarchy-widgets set notes vaultFile "~/Vault/Inbox.md"
+  // Without one, Settings offers only the widget's own file.
+  readonly property string vaultNotes: {
+    var p = String(option("notes", "vaultFile", "") || "").trim()
+    return p.indexOf("~/") === 0 ? Quickshell.env("HOME") + p.substring(1) : p
+  }
+  readonly property bool notesInVault: vaultNotes !== "" && option("notes", "source", "local") === "obsidian"
   NotesModel {
     id: notesObj
-    path: root.option("notes", "source", "local") === "obsidian" ? root.vaultNotes
+    path: root.notesInVault ? root.vaultNotes
       : Quickshell.env("HOME") + "/.local/share/omarchy-widgets/notes.md"
+    inVault: root.notesInVault
   }
   TrelloModel { id: trelloObj }
 
