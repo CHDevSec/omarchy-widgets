@@ -22,7 +22,7 @@ Card {
   // Position isn't pushed by MPRIS; ask for it while playing.
   Timer {
     interval: 1000
-    running: card.visible && card.player !== null && card.player.isPlaying
+    running: card.live && card.player !== null && card.player.isPlaying
     repeat: true
     onTriggered: if (card.player) card.player.positionChanged()
   }
@@ -82,7 +82,7 @@ Card {
       color: card.tint
       dot: 2
       scanColor: Qt.rgba(card.baseBackground.r, card.baseBackground.g, card.baseBackground.b, 0.6)
-      animated: card.visible && !card.player
+      animated: card.live && !card.player
     }
     Text {
       anchors.horizontalCenter: parent.horizontalCenter

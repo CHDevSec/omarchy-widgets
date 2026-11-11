@@ -12,10 +12,12 @@ Card {
   required property var world
 
   property date now: new Date()
+  // Times are shown to the minute: tick on the minute, not every second.
   Timer {
-    interval: 1000
-    running: card.visible
+    interval: Math.max(500, 60050 - card.now.getSeconds() * 1000 - card.now.getMilliseconds())
+    running: card.live
     repeat: true
+    triggeredOnStart: true
     onTriggered: card.now = new Date()
   }
 

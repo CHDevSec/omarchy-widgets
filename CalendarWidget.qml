@@ -16,8 +16,9 @@ Card {
   // Rolls over at midnight.
   Timer {
     interval: 60000
-    running: card.visible
+    running: card.live
     repeat: true
+    triggeredOnStart: true
     onTriggered: {
       var d = new Date()
       if (d.getDate() !== card.today.getDate()) card.today = d

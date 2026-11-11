@@ -23,9 +23,10 @@ Card {
 
   property date now: new Date()
   Timer {
-    // Only tick every second when something on screen changes that often.
-    interval: card.seconds ? 1000 : 10000
-    running: card.visible
+    // Every second only when seconds are shown; else once a minute, on the
+    // minute. Stopped while windows cover it, and it catches up on return.
+    interval: card.seconds ? 1000 : Math.max(500, 60050 - card.now.getSeconds() * 1000 - card.now.getMilliseconds())
+    running: card.live
     repeat: true
     triggeredOnStart: true
     onTriggered: card.now = new Date()

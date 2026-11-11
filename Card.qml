@@ -73,6 +73,9 @@ BorderSurface {
   // The desk's margin: widgets keep to where windows go.
   readonly property int inset: parent && parent.inset !== undefined ? parent.inset : 0
   onInsetChanged: place()
+  // Seen right now: shown, and the desktop under it not covered by windows.
+  // Timers and animations run on this, and catch up when it turns true.
+  readonly property bool live: visible && (!parent || parent.live === undefined || parent.live)
 
   function place() {
     if (!movable) return

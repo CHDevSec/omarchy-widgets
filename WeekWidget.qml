@@ -21,7 +21,7 @@ Card {
   property date now: new Date()
   Timer {
     interval: 30000
-    running: card.visible
+    running: card.live
     repeat: true
     triggeredOnStart: true
     onTriggered: card.now = new Date()

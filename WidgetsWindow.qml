@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import qs.Commons
 import qs.Commons as Commons
 
@@ -51,6 +52,39 @@ PanelWindow {
   readonly property int edge: service.gapsOut
   readonly property int gap: service.gapsIn * 2
 
+  // Whether windows cover the desktop on this screen: a fullscreen window,
+  // or any tiled one (they fill the area the widgets keep to). Floating
+  // windows leave them visible. While covered nothing animates or ticks;
+  // cards catch up the moment the desktop shows again.
+  readonly property var hyprMonitor: screen ? Hyprland.monitorFor(screen) : null
+  readonly property var workspace: hyprMonitor ? hyprMonitor.activeWorkspace : null
+  readonly property bool covered: {
+    var ws = workspace
+    if (!ws) return false
+    if (ws.hasFullscreen) return true
+    var list = ws.toplevels.values
+    for (var i = 0; i < list.length; i++) {
+      var o = list[i].lastIpcObject
+      if (!o || o.floating !== true) return true
+    }
+    return false
+  }
+  // lastIpcObject (floating) is only filled in on request: ask again after
+  // window events, batched.
+  Connections {
+    target: Hyprland
+    function onRawEvent(event) {
+      if (/^(openwindow|closewindow|movewindow|changefloatingmode|fullscreen)/.test(event.name))
+        toplevelRefresh.restart()
+    }
+  }
+  Timer {
+    id: toplevelRefresh
+    interval: 120
+    onTriggered: Hyprland.refreshToplevels()
+  }
+  Component.onCompleted: Hyprland.refreshToplevels()
+
   function below(cards) {
     var y = edge
     for (var i = 0; i < cards.length; i++) if (cards[i].shown) y += cards[i].vh + gap
@@ -63,6 +97,8 @@ PanelWindow {
 
     // Cards stay inside this margin (the windows' gaps_out).
     readonly property int inset: win.edge
+    // Cards run their clocks and animations only while this is true.
+    readonly property bool live: !win.covered
 
     readonly property var cards: [clock, calendar, system, notesCard, weatherCard, mediaCard, worldCard, trelloCard, weekCard]
     // The card being dragged and where it would land; null when none.

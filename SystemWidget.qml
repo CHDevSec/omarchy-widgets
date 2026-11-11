@@ -13,6 +13,17 @@ Card {
 
   required property var stats
 
+  // Sampling runs only while some System widget can be seen.
+  property bool counted: false
+  function count(on) {
+    if (on === counted) return
+    counted = on
+    stats.viewers += on ? 1 : -1
+  }
+  onLiveChanged: count(live)
+  Component.onCompleted: count(live)
+  Component.onDestruction: count(false)
+
   PanelSectionHeader {
     text: "SYSTEM"
     foreground: card.fg
