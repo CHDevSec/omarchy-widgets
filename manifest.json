@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.chdevsec.omarchy-widgets",
   "name": "Omarchy Widgets",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "author": "CHDevSec",
   "license": "MIT",
   "description": "Desktop widgets that sit on the wallpaper, under your windows, drawn with Omarchy's own panels and theme: clock (pixel art too), calendar, system stats, notes (Obsidian too), week of meetings, Trello cards, weather, now playing and a world clock. Drag with a guided snapping grid, stretch, lock; right-click any widget for settings.",

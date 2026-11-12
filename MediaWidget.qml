@@ -13,8 +13,15 @@ Card {
 
   readonly property color tint: pal.magenta
   readonly property var players: Mpris.players.values
+  // Spotify whenever it is open, playing or paused; else whatever plays;
+  // else the first player there is.
+  function isSpotify(p) {
+    return String(p.identity || "").toLowerCase().indexOf("spotify") >= 0
+      || String(p.dbusName || "").toLowerCase().indexOf("spotify") >= 0
+  }
   readonly property var player: {
     var list = players
+    for (var s = 0; s < list.length; s++) if (isSpotify(list[s])) return list[s]
     for (var i = 0; i < list.length; i++) if (list[i].isPlaying) return list[i]
     return list.length > 0 ? list[0] : null
   }
